@@ -1,13 +1,18 @@
 package config
 
 type Config struct {
-	REST RESTConfig
+	REST    RESTConfig
+	RPCCalc RPCCalculate
 }
 
 type RESTConfig struct {
-	PortREST string
+	Port string
+}
+
+type RPCCalculate struct {
+	Port string
 }
 
 func InitConfig() *Config {
-	return &Config{REST: RESTConfig{PortREST: ":8080"}}
+	return &Config{REST: RESTConfig{Port: ":8080"}, RPCCalc: RPCCalculate{Port: "localhost:50051"}}
 }
