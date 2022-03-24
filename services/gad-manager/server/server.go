@@ -1,7 +1,7 @@
 package server
 
 import (
-	"gAD-System/master-controller/config"
+	"gAD-System/services/gad-manager/config"
 	"log"
 
 	"github.com/gin-gonic/gin"

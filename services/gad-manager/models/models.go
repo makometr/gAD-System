@@ -1,7 +1,7 @@
 package models
 
 type CalcRequest struct {
-	Exrps []string `json:"exprs"`
+	Exprs []string `json:"exprs"`
 }
 
 type CaclResponse struct {

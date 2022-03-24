@@ -1,6 +1,6 @@
 package main
 
-import "gAD-System/master-controller/server"
+import "gAD-System/services/gad-manager/server"
 
 func main() {
 	server.Init()
