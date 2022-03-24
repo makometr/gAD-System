@@ -33,10 +33,10 @@ dev-fix-lint:
 
 build-gad-mamanger:
 	@echo "${OK_COLOR}==> Building gad-manager${NO_COLOR}\n"
-	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/gad-manager.app cmd/gad-manager/main.go
+	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/gad-manager.exe cmd/gad-manager/main.go
 
 build-calc-controller:
 	@echo "${OK_COLOR}==> Building calc-controller${NO_COLOR}\n"
-	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-controller.app cmd/calc-controller/main.go
+	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-controller.exe cmd/calc-controller/main.go
 
 build: build-gad-mamanger build-calc-controller

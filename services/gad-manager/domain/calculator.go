@@ -8,6 +8,6 @@ func NewCalculator(repo Repository) *Calculator {
 	return &Calculator{repo: repo}
 }
 
-func (c Calculator) Calculate(expr string) (string, error) {
-	return c.repo.doCalculate(expr)
+func (c Calculator) Calculate(exprs []string) ([]string, error) {
+	return c.repo.doCalculate(exprs)
 }

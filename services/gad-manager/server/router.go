@@ -31,7 +31,7 @@ func Pong(c *gin.Context) {
 }
 
 func (h Handlers) Calculate(c *gin.Context) {
-	ans, err := h.Calculator.Calculate("100+100")
+	ans, err := h.Calculator.Calculate([]string{"100+100", "200-20"})
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": err.Error(),
