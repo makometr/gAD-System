@@ -1,14 +1,15 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import "gAD-System/master-controller/server"
 
 func main() {
-	r := gin.Default()
+	server.Init()
+	// r := gin.Default()
 
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // :8080
+	// r.GET("/ping", func(c *gin.Context) {
+	// 	c.JSON(200, gin.H{
+	// 		"message": "pong",
+	// 	})
+	// })
+	// r.Run() // :8080
 }
