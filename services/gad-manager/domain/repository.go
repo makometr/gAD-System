@@ -18,8 +18,7 @@ func NewCalcRepository(conn *grpc.ClientConn) Repository {
 }
 
 func (r CalcRepo) doCalculate(string) (string, error) {
-	// r.Conn.
-	// TODO
+	// TODO grpc-client
 	return "100", nil
 }
 

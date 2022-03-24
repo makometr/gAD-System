@@ -1,7 +1,7 @@
 package server
 
 import (
-	domain "gAD-System/services/gad-manager/domain/calculator"
+	"gAD-System/services/gad-manager/domain"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,7 +30,7 @@ func Pong(c *gin.Context) {
 }
 
 func (h Handlers) Calculate(c *gin.Context) {
-	ans, err := h.calculator.DoCalculate("100")
+	ans, err := h.calculator.Calculate("100+100")
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": err.Error(),
