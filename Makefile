@@ -11,7 +11,7 @@ all: clean deps build
 
 proto-gen:
 	@echo "${OK_COLOR}==> Generating proto code${NO_COLOR}\n"
-	@protoc -I=. --go_out=. ./api/proto3/calculation_service/v1beta1/message.proto
+	@protoc -I=. --go_out=. --go-grpc_out=. ./api/proto/grpc/calculator/service.proto
 
 deps:
 	git config --global http.https://gopkg.in.followRedirects true

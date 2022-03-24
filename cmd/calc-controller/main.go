@@ -1,1 +1,5 @@
-package calc_controller
+package main
+
+func main() {
+
+}
