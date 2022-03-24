@@ -1,7 +1,7 @@
 syntax = "proto3";
 package calculation_service.v1beta1;
 
-option go_package = "proto/calculation_service/v1beta1/messagepb";
+option go_package = "internal/proto/calculation_service/v1beta1/messagepb";
 
 service CalculatorService {
   rpc DoCalculate (CalculatorRequest) returns (CalculatorResponse);
