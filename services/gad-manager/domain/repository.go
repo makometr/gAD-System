@@ -6,7 +6,6 @@ import (
 
 type Repository interface {
 	doCalculate(string) (string, error)
-	Close() error
 }
 
 type CalcRepo struct {
@@ -20,8 +19,4 @@ func NewCalcRepository(conn *grpc.ClientConn) Repository {
 func (r CalcRepo) doCalculate(string) (string, error) {
 	// TODO grpc-client
 	return "100", nil
-}
-
-func (r CalcRepo) Close() error {
-	return r.Conn.Close()
 }

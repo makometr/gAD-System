@@ -7,10 +7,10 @@ import (
 )
 
 type Handlers struct {
-	calculator domain.Calculator
+	Calculator *domain.Calculator
 }
 
-func NewRouter() *gin.Engine {
+func NewRouter(h *Handlers) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
@@ -19,6 +19,7 @@ func NewRouter() *gin.Engine {
 	// router.Use(middlewares.AuthMiddleware())
 
 	router.GET("/ping", Pong)
+	router.GET("/calc", h.Calculate)
 
 	return router
 }
@@ -30,7 +31,7 @@ func Pong(c *gin.Context) {
 }
 
 func (h Handlers) Calculate(c *gin.Context) {
-	ans, err := h.calculator.Calculate("100+100")
+	ans, err := h.Calculator.Calculate("100+100")
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": err.Error(),

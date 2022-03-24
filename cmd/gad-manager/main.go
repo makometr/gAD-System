@@ -2,20 +2,18 @@ package main
 
 import (
 	"gAD-System/services/gad-manager/config"
+	"gAD-System/services/gad-manager/domain"
 	"gAD-System/services/gad-manager/server"
 )
 
 func main() {
 	cfg := config.InitConfig()
-	server.InitREST(cfg)
 
-	// defer rpcCalcConn.
-	// r := gin.Default()
+	calcConn := server.InitCalculateRPC(cfg)
+	defer calcConn.Close()
+	calcRepo := domain.NewCalcRepository(calcConn)
+	calculator := domain.NewCalculator(calcRepo)
+	handlers := server.Handlers{Calculator: calculator}
 
-	// r.GET("/ping", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{
-	// 		"message": "pong",
-	// 	})
-	// })
-	// r.Run() // :8080
+	_ = server.InitREST(cfg, &handlers)
 }

@@ -12,8 +12,8 @@ type CalcRPCConn struct {
 	Conn *grpc.ClientConn
 }
 
-func InitREST(cfg *config.Config) error {
-	r := NewRouter()
+func InitREST(cfg *config.Config, h *Handlers) error {
+	r := NewRouter(h)
 	if err := r.Run(cfg.REST.Port); err != nil {
 		return err
 	}
