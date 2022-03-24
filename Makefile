@@ -9,9 +9,13 @@ WARN_COLOR=\033[33;01m
 
 all: clean deps build
 
-proto-gen:
-	@echo "${OK_COLOR}==> Generating proto code${NO_COLOR}\n"
+proto-calculator:
+	@echo "${OK_COLOR}==> Generating proto code for manager${NO_COLOR}\n"
 	@protoc -I=. --go_out=. --go-grpc_out=. ./api/proto/grpc/calculator/service.proto
+
+proto-expression:
+	@echo "${OK_COLOR}==> Generating proto code for rmq${NO_COLOR}\n"
+	@protoc -I=. --go_out=. ./api/proto/expression/event.proto
 
 deps:
 	git config --global http.https://gopkg.in.followRedirects true
