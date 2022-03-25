@@ -1,6 +1,6 @@
 package config
 
-import "gAD-System/vendor/github.com/kelseyhightower/envconfig"
+import "github.com/kelseyhightower/envconfig"
 
 // Config stores all configs off calc-controller service
 type Config struct {
