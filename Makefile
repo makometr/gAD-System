@@ -7,7 +7,7 @@ OK_COLOR=\033[32;01m
 ERROR_COLOR=\033[31;01m
 WARN_COLOR=\033[33;01m
 
-all: clean deps build
+all: clean build
 
 proto-calculator:
 	@echo "${OK_COLOR}==> Generating proto code for manager${NO_COLOR}\n"
@@ -16,6 +16,14 @@ proto-calculator:
 proto-expression:
 	@echo "${OK_COLOR}==> Generating proto code for rmq${NO_COLOR}\n"
 	@protoc -I=. --go_out=. ./api/proto/expression/event.proto
+
+docker-build-gad-manager:
+	@echo "${OK_COLOR}==> Building docker image for gad-manager${NO_COLOR}\n"
+	@docker build --no-cache -t gad-manager:v0.1 ./ -f ./docker/gad-manager.Dockerfile
+
+docker-build-rabbitmq:
+	@echo "${OK_COLOR}==> Building docker image for rabbitmq${NO_COLOR}\n"
+	@docker build --no-cache -t gad-rabbitmq:v0.1 ./ -f ./docker/rmq/rabbitmq.Dockerfile
 
 deps:
 	git config --global http.https://gopkg.in.followRedirects true
@@ -35,7 +43,7 @@ dev-fix-lint:
 	@gofmt -s -w .
 	@goimports -l -w .
 
-build-gad-mamanger:
+build-gad-manager:
 	@echo "${OK_COLOR}==> Building gad-manager${NO_COLOR}\n"
 	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/gad-manager.exe cmd/gad-manager/main.go
 
@@ -43,4 +51,4 @@ build-calc-controller:
 	@echo "${OK_COLOR}==> Building calc-controller${NO_COLOR}\n"
 	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-controller.exe cmd/calc-controller/main.go
 
-build: build-gad-mamanger build-calc-controller
+build: build-gad-manager build-calc-controller

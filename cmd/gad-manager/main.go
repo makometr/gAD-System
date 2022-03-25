@@ -17,7 +17,10 @@ func main() {
 		}
 	}()
 
-	cfg := config.InitConfig()
+	cfg, err := config.InitConfig()
+	if err != nil {
+		logger.Error("failed to init cfg from with envconfig")
+	}
 
 	calcConn, err := server.InitCalculateRPC(cfg)
 	if err != nil {
