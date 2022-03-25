@@ -9,7 +9,7 @@ import (
 
 // InitREST inits REST API server for outer clients
 func InitREST(cfg *config.Config, h *Handlers) error {
-	r := NewRouter(h)
+	r := newRouter(h)
 	if err := r.Run(cfg.REST.Port); err != nil {
 		return err
 	}
