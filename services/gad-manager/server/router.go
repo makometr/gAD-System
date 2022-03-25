@@ -6,31 +6,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handlers stores dependecies for handling requests
 type Handlers struct {
 	Calculator *domain.Calculator
 }
 
-func NewRouter(h *Handlers) *gin.Engine {
+// InitServerHandlers inits handlers dependecies with upper-level entites
+func InitServerHandlers(calculator *domain.Calculator) *Handlers {
+	return &Handlers{Calculator: calculator}
+}
+
+func newRouter(h *Handlers) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	// router.GET("/health", health.Status)
-	// router.Use(middlewares.AuthMiddleware())
-
-	router.GET("/ping", Pong)
-	router.GET("/calc", h.Calculate)
+	router.GET("/ping", pong)
+	router.GET("/calc", h.calculate)
 
 	return router
 }
 
-func Pong(c *gin.Context) {
+func pong(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
 	})
 }
 
-func (h Handlers) Calculate(c *gin.Context) {
+func (h Handlers) calculate(c *gin.Context) {
 	ans, err := h.Calculator.Calculate([]string{"100+100", "200-20"})
 	if err != nil {
 		c.JSON(400, gin.H{
