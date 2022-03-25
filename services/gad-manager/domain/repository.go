@@ -15,16 +15,16 @@ type Repository interface {
 	doCalculate([]string) ([]string, error)
 }
 
-type CalcRepo struct {
+type сalcRepo struct {
 	calcClient pb.CalculatorServiceClient
 }
 
 func NewCalcRepository(conn *grpc.ClientConn) Repository {
 	c := pb.NewCalculatorServiceClient(conn)
-	return &CalcRepo{calcClient: c}
+	return &сalcRepo{calcClient: c}
 }
 
-func (cr CalcRepo) doCalculate(exprs []string) ([]string, error) {
+func (cr сalcRepo) doCalculate(exprs []string) ([]string, error) {
 	ctx := context.TODO()
 	r, err := cr.calcClient.DoCalculate(ctx, &pb.CalculatorRequest{Expression: exprs})
 	if err != nil {
