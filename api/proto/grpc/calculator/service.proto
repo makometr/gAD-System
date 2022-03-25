@@ -1,0 +1,16 @@
+syntax = "proto3";
+package grpc.calculator;
+
+option go_package = "internal/proto/grpc/calculator/service";
+
+service CalculatorService {
+  rpc DoCalculate (CalculatorRequest) returns (CalculatorReply);
+}
+
+message CalculatorRequest {
+  repeated string expression = 1;
+}
+
+message CalculatorReply {
+  repeated string result = 1;
+}
