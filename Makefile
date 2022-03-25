@@ -7,7 +7,7 @@ OK_COLOR=\033[32;01m
 ERROR_COLOR=\033[31;01m
 WARN_COLOR=\033[33;01m
 
-all: clean deps build
+all: clean build
 
 proto-calculator:
 	@echo "${OK_COLOR}==> Generating proto code for manager${NO_COLOR}\n"
