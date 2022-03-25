@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	pb "gAD-System/internal/proto/grpc/calculator/service"
+	"gAD-System/services/calc-controller/config"
 	"gAD-System/services/calc-controller/server"
-	"gAD-System/services/gad-manager/config"
 
 	"net"
 
