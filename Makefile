@@ -35,7 +35,7 @@ dev-fix-lint:
 	@gofmt -s -w .
 	@goimports -l -w .
 
-build-gad-mamanger:
+build-gad-manager:
 	@echo "${OK_COLOR}==> Building gad-manager${NO_COLOR}\n"
 	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/gad-manager.exe cmd/gad-manager/main.go
 
@@ -43,4 +43,4 @@ build-calc-controller:
 	@echo "${OK_COLOR}==> Building calc-controller${NO_COLOR}\n"
 	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-controller.exe cmd/calc-controller/main.go
 
-build: build-gad-mamanger build-calc-controller
+build: build-gad-manager build-calc-controller
