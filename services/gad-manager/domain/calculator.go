@@ -9,5 +9,5 @@ func NewCalculator(repo Repository) *Calculator {
 }
 
 func (c Calculator) Calculate(exprs []string) ([]string, error) {
-	return c.repo.doCalculate(exprs)
+	return c.repo.DoCalculate(exprs)
 }

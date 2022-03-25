@@ -1,7 +1,9 @@
 package server
 
 import (
+	"fmt"
 	"gAD-System/services/gad-manager/domain"
+	"gAD-System/services/gad-manager/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +24,7 @@ func newRouter(h *Handlers) *gin.Engine {
 	router.Use(gin.Recovery())
 
 	router.GET("/ping", pong)
-	router.GET("/calc", h.calculate)
+	router.POST("/calc", h.calculate)
 
 	return router
 }
@@ -34,11 +36,21 @@ func pong(c *gin.Context) {
 }
 
 func (h Handlers) calculate(c *gin.Context) {
-	ans, err := h.Calculator.Calculate([]string{"100+100", "200-20"})
+	var reqBody models.CalcRequest
+	if err := c.BindJSON(&reqBody); err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	fmt.Println(reqBody)
+
+	ans, err := h.Calculator.Calculate(reqBody.Exprs)
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	c.JSON(200, gin.H{

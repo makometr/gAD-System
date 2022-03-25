@@ -12,7 +12,7 @@ import (
 var errCalcRPCResponse = errors.New("receive calc result grpc failure")
 
 type Repository interface {
-	doCalculate([]string) ([]string, error)
+	DoCalculate([]string) ([]string, error)
 }
 
 type сalcRepo struct {
@@ -24,7 +24,7 @@ func NewCalcRepository(conn *grpc.ClientConn) Repository {
 	return &сalcRepo{calcClient: c}
 }
 
-func (cr сalcRepo) doCalculate(exprs []string) ([]string, error) {
+func (cr сalcRepo) DoCalculate(exprs []string) ([]string, error) {
 	ctx := context.TODO()
 	r, err := cr.calcClient.DoCalculate(ctx, &pb.CalculatorRequest{Expression: exprs})
 	if err != nil {

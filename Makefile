@@ -51,4 +51,8 @@ build-calc-controller:
 	@echo "${OK_COLOR}==> Building calc-controller${NO_COLOR}\n"
 	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-controller.exe cmd/calc-controller/main.go
 
+docker-build-gad-manager:
+	@docker build -t gad-test ./ -f docker\gad-manager.Dockerfile
+
+
 build: build-gad-manager build-calc-controller
