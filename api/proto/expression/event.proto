@@ -5,6 +5,5 @@ package expression;
 option go_package = "internal/proto/expression/event";
 
 message Event {
-  string id = 1;
-  string expression = 2;
+  string expression = 1;
 }
