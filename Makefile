@@ -17,6 +17,14 @@ proto-expression:
 	@echo "${OK_COLOR}==> Generating proto code for rmq${NO_COLOR}\n"
 	@protoc -I=. --go_out=. ./api/proto/expression/event.proto
 
+docker-build-gad-manager:
+	@echo "${OK_COLOR}==> Building docker image for gad-manager${NO_COLOR}\n"
+	@docker build --no-cache -t gad-manager:v0.1 ./ -f ./docker/gad-manager.Dockerfile
+
+docker-build-rabbitmq:
+	@echo "${OK_COLOR}==> Building docker image for rabbitmq${NO_COLOR}\n"
+	@docker build --no-cache -t gad-rabbitmq:v0.1 ./ -f ./docker/rmq/rabbitmq.Dockerfile
+
 deps:
 	git config --global http.https://gopkg.in.followRedirects true
 	@echo "${OK_COLOR}==> Downloading dependencies${NO_COLOR}\n"
