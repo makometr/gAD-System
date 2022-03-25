@@ -10,12 +10,12 @@ type Config struct {
 
 // RESTConfig stores configs for REST API Gin Server
 type RESTConfig struct {
-	Port string `envconfig:"GM_REST_PORT" default:"8080"`
+	Port string `envconfig:"GM_REST_PORT" default:":8080"`
 }
 
 // RPCConfigCalc stores configs for GRPC connecion
 type RPCConfigCalc struct {
-	Port string `envconfig:"GM_GRPC_PORT" default:"50051"`
+	Port string `envconfig:"GM_GRPC_PORT" default:":50051"`
 }
 
 // InitConfig reads config variables from env and init *Config value

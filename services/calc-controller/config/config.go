@@ -10,12 +10,12 @@ type Config struct {
 
 // RMQConfig stores configs for RabbitMQ connection
 type RMQConfig struct {
-	Port string `envconfig:"CC_RMQ_PORT" default:"5672"`
+	Port string `envconfig:"CC_RMQ_PORT" default:":5672"`
 }
 
 // RPCConfigCalc stores configs for GRPC connecion
 type RPCConfigCalc struct {
-	Port string `envconfig:"CC_GRPC_PORT" default:"50051"`
+	Port string `envconfig:"CC_GRPC_PORT" default:":50051"`
 }
 
 // InitConfig reads config variables from env and init *Config value
