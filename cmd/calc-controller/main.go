@@ -6,6 +6,7 @@ import (
 	"gAD-System/services/calc-controller/config"
 	"gAD-System/services/calc-controller/rmq"
 	"gAD-System/services/calc-controller/server"
+
 	"github.com/streadway/amqp"
 
 	"net"
@@ -27,7 +28,7 @@ func main() {
 		logger.Error("failed to init cfg from with envconfig")
 	}
 
-	rmqConn, err := amqp.Dial(fmt.Sprintf("ampq://guest:guest@localhost:%s/\n", cfg.RMQCalc.Port))
+	rmqConn, err := amqp.Dial(fmt.Sprintf("amqp://guest:guest@localhost:%s/", cfg.RMQCalc.Port))
 	if err != nil {
 		logger.Fatal("failed to connect to rabbitmq:", zap.Error(err))
 	}

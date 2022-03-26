@@ -12,4 +12,5 @@ RUN make build-gad-manager
 FROM alpine:latest AS runner
 RUN apk -U upgrade
 COPY --from=builder /go/src/gAD-System/build/gad-manager.exe ./
+EXPOSE 8080
 ENTRYPOINT [ "./gad-manager.exe" ]
