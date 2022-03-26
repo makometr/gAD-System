@@ -67,13 +67,11 @@ func (s *calculatorServer) DoCalculate(ctx context.Context, request *pb.Calculat
 		}
 	}()
 
-	go func() {
-		wg.Wait()
-		for event := range output {
-			fmt.Printf("New event in DoCalculation: %s", event)
-			results = append(results, event.MessageID)
-		}
-	}()
+	wg.Wait()
+	for event := range output {
+		fmt.Printf("New event in DoCalculation: %s", event)
+		results = append(results, event.MessageID)
+	}
 
 	reply := pb.CalculatorReply{Result: append(results, "EVERYTHING WROCKS!")}
 	return &reply, nil
