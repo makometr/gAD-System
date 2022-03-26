@@ -4,20 +4,22 @@ import "github.com/kelseyhightower/envconfig"
 
 // Config stores all configs off calc-controller service
 type Config struct {
-	RMQCalc RMQConfig
-	RPCCalc RPCConfigCalc
+	RMQConfig RabbitMQConfig
+	CCConfig  CalcControllerConfig
 }
 
-// RMQConfig stores configs for RabbitMQ connection
-type RMQConfig struct {
-	Port     string `envconfig:"CC_RMQ_PORT" default:"5672"`
-	PubQName string `envconfig:"PUB_QUERY_NAME" default:"test"`
-	SubQName string `envconfig:"SUB_QUERY_NAME" default:"test"`
+// RabbitMQConfig stores configs for RabbitMQ connection
+type RabbitMQConfig struct {
+	Server       string `envconfig:"RABBITMQ_SERVER" default:"localhost"`
+	Port         string `envconfig:"RABBITMQ_PORT" default:"5672"`
+	PubQueryName string `envconfig:"PUBLISH_QUERY_NAME" default:"test"`
+	SubQueryName string `envconfig:"SUBSCRIBE_QUERY_NAME" default:"test"`
 }
 
-// RPCConfigCalc stores configs for GRPC connecion
-type RPCConfigCalc struct {
-	Port string `envconfig:"CC_GRPC_PORT" default:":50051"`
+// CalcControllerConfig stores configs for GRPC connection
+type CalcControllerConfig struct {
+	Server string `envconfig:"CALCULATION_CONTROLLER_SERVER" default:"localhost"`
+	Port   string `envconfig:"CALCULATION_CONTROLLER_PORT" default:":50051"`
 }
 
 // InitConfig reads config variables from env and init *Config value

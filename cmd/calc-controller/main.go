@@ -28,16 +28,16 @@ func main() {
 		logger.Error("failed to init cfg from with envconfig")
 	}
 
-	rmqConn, err := amqp.Dial(fmt.Sprintf("amqp://guest:guest@localhost:%s/", cfg.RMQCalc.Port))
+	rmqConn, err := amqp.Dial(cfg.RMQConfig.Server)
 	if err != nil {
 		logger.Fatal("failed to connect to rabbitmq:", zap.Error(err))
 	}
 	defer rmqConn.Close()
 
-	rmqPub := rmq.NewPublisher(rmqConn, cfg.RMQCalc.PubQName)
-	rmqSub := rmq.NewConsumer(rmqConn, cfg.RMQCalc.SubQName)
+	rmqPub := rmq.NewPublisher(rmqConn, cfg.RMQConfig.PubQueryName)
+	rmqSub := rmq.NewConsumer(rmqConn, cfg.RMQConfig.SubQueryName)
 
-	listen, err := net.Listen("tcp", cfg.RPCCalc.Port)
+	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.CCConfig.Server, cfg.CCConfig.Port))
 	if err != nil {
 		logger.Error("failed to init RPC connection:", zap.Error(err))
 		return

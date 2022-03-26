@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  gad-manager:
+    build:
+      context: ../
+      dockerfile: ./docker/gad-manager.Dockerfile
+    environment:
+      GAD_MANAGER_SERVER: localhost
+      GAD_MANAGER_PORT: 8080
+      CALCULATION_CONTROLLER_SERVER: calc-controller
+      CALCULATION_CONTROLLER_PORT: 50051
+    depends_on:
+      - calc-controller
+    ports:
+      - "8080:8080"
+    networks:
+      - gad-system
+
+  calc-controller:
+    build:
+      context: ../
+      dockerfile: ./docker/calc-controller.Dockerfile
+    environment:
+      RABBITMQ_SERVER: gad-rabbitmq
+      RABBITMQ_PORT: 5672
+      PUBLISH_QUERY_NAME: test
+      SUBSCRIBE_QUERY_NAME: test
+      CALCULATION_CONTROLLER_SERVER: localhost
+      CALCULATION_CONTROLLER_PORT: 50051
+    depends_on:
+      - gad-rabbitmq
+    restart: on-failure
+    ports:
+      - "50051:50051"
+    networks:
+      - gad-system
+
+  gad-rabbitmq:
+    build:
+      context: ../
+      dockerfile: ./docker/rmq/rabbitmq.Dockerfile
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - gad-system
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  gad-system:
+    driver: bridge
