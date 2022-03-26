@@ -11,7 +11,8 @@ type Config struct {
 // RMQConfig stores configs for RabbitMQ connection
 type RMQConfig struct {
 	Port     string `envconfig:"CC_RMQ_PORT" default:"5672"`
-	PubQName string `envconfig:"PUB_QUERY_NAME"`
+	PubQName string `envconfig:"PUB_QUERY_NAME" default:"test"`
+	SubQName string `envconfig:"SUB_QUERY_NAME" default:"test"`
 }
 
 // RPCConfigCalc stores configs for GRPC connecion
