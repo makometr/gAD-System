@@ -34,13 +34,8 @@ func main() {
 	}
 	defer rmqConn.Close()
 
-	rmqPubChannel, err := rmqConn.Channel()
-	if err != nil {
-		logger.Fatal("failed to create rmq channel:", zap.Error(err))
-	}
-	defer rmqPubChannel.Close()
-
-	rmqPub := rmq.NewPublisher(rmqPubChannel, cfg.RMQCalc.PubQName)
+	rmqPub := rmq.NewPublisher(rmqConn, cfg.RMQCalc.PubQName)
+	rmqSub := rmq.NewConsumer(rmqConn, cfg.RMQCalc.SubQName)
 
 	listen, err := net.Listen("tcp", cfg.RPCCalc.Port)
 	if err != nil {
@@ -49,6 +44,6 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterCalculatorServiceServer(grpcServer, server.NewCalculatorServer(rmqPub))
+	pb.RegisterCalculatorServiceServer(grpcServer, server.NewCalculatorServer(rmqPub, rmqSub))
 	grpcServer.Serve(listen)
 }

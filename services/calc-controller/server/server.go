@@ -2,39 +2,80 @@ package server
 
 import (
 	"context"
+	"fmt"
 	schema "gAD-System/internal/proto/expression/event"
 	pb "gAD-System/internal/proto/grpc/calculator/service"
 	"gAD-System/services/calc-controller/rmq"
 	"google.golang.org/protobuf/proto"
-	"time"
+	"sync"
 )
 
 type calculatorServer struct {
 	pb.CalculatorServiceServer
 	publisher rmq.Publisher
+	consumer  rmq.Consumer
 }
 
-func NewCalculatorServer(publisher rmq.Publisher) *calculatorServer {
-	return &calculatorServer{publisher: publisher}
+func NewCalculatorServer(publisher rmq.Publisher, consumer rmq.Consumer) *calculatorServer {
+	return &calculatorServer{
+		publisher: publisher,
+		consumer:  consumer,
+	}
 }
 
 func (s *calculatorServer) DoCalculate(ctx context.Context, request *pb.CalculatorRequest) (*pb.CalculatorReply, error) {
-	payload := request.GetExpression()
-	for _, expr := range payload {
-		message, err := msgToProtoBytes(expr)
-		if err != nil {
-			return nil, err
+	input := make(chan rmq.Message)
+	output := make(chan rmq.Message)
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	var results []string
+
+	go func() {
+		defer wg.Done()
+		payload := request.GetExpression()
+		for _, event := range payload {
+			serialize, err := msgToProtoBytes(event)
+			if err != nil {
+				fmt.Printf("error converting message to proto bytes: %v", err)
+				continue
+			}
+			msg := rmq.Message{
+				ContentType: "text/plain",
+				MessageID:   event,
+				Body:        serialize,
+			}
+			input <- msg
 		}
+		close(input)
+	}()
 
-		err = s.publisher.Publish(ctx, rmq.Message{
-			ContentType: "test/plain",
-			Timestamp:   time.Now(),
-			MessageID:   expr,
-			Body:        message,
-		})
-	}
+	go func() {
+		defer wg.Done()
+		err := s.publisher.Publish(ctx, input)
+		if err != nil {
+			fmt.Printf("error while publishing events: %v", err)
+		}
+	}()
 
-	reply := pb.CalculatorReply{Result: []string{"EVERYTHING WROKS!"}}
+	go func() {
+		defer wg.Done()
+		err := s.consumer.Consume(ctx, output)
+		if err != nil {
+			fmt.Printf("error while consuming events: %v", err)
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		for event := range output {
+			fmt.Printf("New event in DoCalculation: %s", event)
+			results = append(results, event.MessageID)
+		}
+	}()
+
+	reply := pb.CalculatorReply{Result: append(results, "EVERYTHING WROCKS!")}
 	return &reply, nil
 }
 
