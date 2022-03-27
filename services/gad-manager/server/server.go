@@ -11,7 +11,7 @@ import (
 // InitREST inits REST API server for outer clients
 func InitREST(cfg *config.Config, h *Handlers) error {
 	r := newRouter(h)
-	if err := r.Run(fmt.Sprintf("%s:%s", cfg.GMConfig.Server, cfg.GMConfig.Port)); err != nil {
+	if err := r.Run(fmt.Sprintf(":%s", cfg.GMConfig.Port)); err != nil {
 		return err
 	}
 	return nil

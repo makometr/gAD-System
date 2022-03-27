@@ -26,7 +26,7 @@ services:
       RABBITMQ_PORT: 5672
       PUBLISH_QUERY_NAME: test
       SUBSCRIBE_QUERY_NAME: test
-      CALCULATION_CONTROLLER_SERVER: localhost
+      CALCULATION_CONTROLLER_SERVER: 0.0.0.0
       CALCULATION_CONTROLLER_PORT: 50051
     depends_on:
       - gad-rabbitmq
