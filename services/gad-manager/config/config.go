@@ -4,18 +4,20 @@ import "github.com/kelseyhightower/envconfig"
 
 // Config stores all configs off gad-manager service
 type Config struct {
-	REST    RESTConfig
-	RPCCalc RPCConfigCalc
+	GMConfig GadManagerConfig
+	CCConfig CalcControllerConfig
 }
 
-// RESTConfig stores configs for REST API Gin Server
-type RESTConfig struct {
-	Port string `envconfig:"GM_REST_PORT" default:":8080"`
+// GadManagerConfig stores configs for REST API Gin Server
+type GadManagerConfig struct {
+	Server string `envconfig:"GAD_MANAGER_SERVER" default:"localhost"`
+	Port   string `envconfig:"GAD_MANAGER_PORT" default:":8080"`
 }
 
-// RPCConfigCalc stores configs for GRPC connecion
-type RPCConfigCalc struct {
-	Port string `envconfig:"GM_GRPC_PORT" default:":50051"`
+// CalcControllerConfig stores configs for GRPC connection
+type CalcControllerConfig struct {
+	Server string `envconfig:"CALCULATION_CONTROLLER_SERVER" default:"localhost"`
+	Port   string `envconfig:"CALCULATION_CONTROLLER_PORT" default:":50051"`
 }
 
 // InitConfig reads config variables from env and init *Config value
