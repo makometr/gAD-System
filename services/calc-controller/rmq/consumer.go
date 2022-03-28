@@ -12,25 +12,23 @@ type Consumer interface {
 
 type rmqConsumer struct {
 	conn  *amqp.Connection
+	ch    *amqp.Channel
 	query string
 }
 
-func NewConsumer(connection *amqp.Connection, queryName string) Consumer {
+func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, *amqp.Channel, error) {
+	channel, err := connection.Channel()
+	if err != nil {
+		return nil, nil, err
+	}
 	return &rmqConsumer{
 		conn:  connection,
 		query: queryName,
-	}
+	}, channel, nil
 }
 
 func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
-	channel, err := c.conn.Channel()
-	if err != nil {
-		return err
-	}
-	defer channel.Close()
-	fmt.Println("Consume channel created")
-
-	results, err := channel.Consume(
+	results, err := c.ch.Consume(
 		c.query,
 		"calc-controller",
 		true,

@@ -13,28 +13,27 @@ type Publisher interface {
 
 type rmqPublisher struct {
 	conn  *amqp.Connection
+	ch    *amqp.Channel
 	query string
 }
 
-func NewPublisher(connection *amqp.Connection, queryName string) Publisher {
+func NewPublisher(connection *amqp.Connection, queryName string) (Publisher, *amqp.Channel, error) {
+	channel, err := connection.Channel()
+	if err != nil {
+		return nil, nil, err
+	}
 	return &rmqPublisher{
 		conn:  connection,
+		ch:    channel,
 		query: queryName,
-	}
+	}, channel, nil
 }
 
 func (p *rmqPublisher) Publish(ctx context.Context, pub <-chan Message) error {
-	channel, err := p.conn.Channel()
-	if err != nil {
-		return err
-	}
-	fmt.Println("channel created")
-	defer channel.Close()
-
 	quit := make(chan error)
 	go func() {
 		for event := range pub {
-			err = channel.Publish("", p.query, false, false, amqp.Publishing{
+			err := p.ch.Publish("", p.query, false, false, amqp.Publishing{
 				ContentType: event.ContentType,
 				MessageId:   event.MessageID,
 				Timestamp:   time.Now(),
@@ -48,7 +47,7 @@ func (p *rmqPublisher) Publish(ctx context.Context, pub <-chan Message) error {
 		quit <- nil
 	}()
 
-	if err = <-quit; err != nil {
+	if err := <-quit; err != nil {
 		return err
 	}
 	fmt.Println("Publishing finished")
