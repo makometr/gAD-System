@@ -2,6 +2,7 @@ package rmq
 
 import (
 	"context"
+	"fmt"
 	"github.com/streadway/amqp"
 	"time"
 )
@@ -27,6 +28,7 @@ func (p *rmqPublisher) Publish(ctx context.Context, pub <-chan Message) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("channel created")
 	defer channel.Close()
 
 	quit := make(chan error)
@@ -41,6 +43,7 @@ func (p *rmqPublisher) Publish(ctx context.Context, pub <-chan Message) error {
 			if err != nil {
 				quit <- err
 			}
+			fmt.Println("published", event)
 		}
 		quit <- nil
 	}()
@@ -48,5 +51,6 @@ func (p *rmqPublisher) Publish(ctx context.Context, pub <-chan Message) error {
 	if err = <-quit; err != nil {
 		return err
 	}
+	fmt.Println("Publishing finished")
 	return nil
 }

@@ -28,6 +28,7 @@ func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
 		return err
 	}
 	defer channel.Close()
+	fmt.Println("Consume channel created")
 
 	results, err := channel.Consume(
 		c.query,
@@ -45,6 +46,7 @@ func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
 	quit := make(chan error)
 
 	go func() {
+		fmt.Println("Waiting to consume...")
 		for event := range results {
 			fmt.Printf("New event is comming: %s", event.MessageId)
 			msg := Message{
@@ -62,5 +64,6 @@ func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
 	if err = <-quit; err != nil {
 		return err
 	}
+	fmt.Println("Consuming finished")
 	return nil
 }

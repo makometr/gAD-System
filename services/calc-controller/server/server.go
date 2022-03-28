@@ -7,7 +7,6 @@ import (
 	pb "gAD-System/internal/proto/grpc/calculator/service"
 	"gAD-System/services/calc-controller/rmq"
 	"google.golang.org/protobuf/proto"
-	"sync"
 )
 
 type calculatorServer struct {
@@ -24,17 +23,15 @@ func NewCalculatorServer(publisher rmq.Publisher, consumer rmq.Consumer) *calcul
 }
 
 func (s *calculatorServer) DoCalculate(ctx context.Context, request *pb.CalculatorRequest) (*pb.CalculatorReply, error) {
-	input := make(chan rmq.Message)
-	output := make(chan rmq.Message)
+	payload := request.GetExpression()
 
-	var wg sync.WaitGroup
-	wg.Add(3)
+	input := make(chan rmq.Message, len(payload))
+	output := make(chan rmq.Message)
+	err := make(chan error)
 
 	var results []string
 
 	go func() {
-		defer wg.Done()
-		payload := request.GetExpression()
 		for _, event := range payload {
 			serialize, err := msgToProtoBytes(event)
 			if err != nil {
@@ -49,30 +46,35 @@ func (s *calculatorServer) DoCalculate(ctx context.Context, request *pb.Calculat
 			input <- msg
 		}
 		close(input)
+		fmt.Println("go1 finished")
 	}()
 
 	go func() {
-		defer wg.Done()
 		err := s.publisher.Publish(ctx, input)
 		if err != nil {
 			fmt.Printf("error while publishing events: %v", err)
 		}
+		fmt.Println("go2 finished")
 	}()
 
 	go func() {
-		defer wg.Done()
 		err := s.consumer.Consume(ctx, output)
 		if err != nil {
 			fmt.Printf("error while consuming events: %v", err)
 		}
+		fmt.Println("go3 finished")
 	}()
 
-	wg.Wait()
-	for event := range output {
-		fmt.Printf("New event in DoCalculation: %s", event)
-		results = append(results, event.MessageID)
-	}
+	go func() {
+		for i := 0; i < len(payload); i++ {
+			event := <-output
+			fmt.Printf("New event in DoCalculation: %s", event)
+			results = append(results, event.MessageID)
+		}
+		err <- nil
+	}()
 
+	<-err
 	reply := pb.CalculatorReply{Result: append(results, "EVERYTHING WROCKS!")}
 	return &reply, nil
 }
