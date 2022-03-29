@@ -3,33 +3,27 @@ package rmq
 import (
 	"context"
 	"fmt"
+
 	"github.com/streadway/amqp"
 )
 
 type Consumer interface {
-	Consume(ctx context.Context, sub chan<- Message) error
+	Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID)
 }
 
 type rmqConsumer struct {
-	conn  *amqp.Connection
-	ch    *amqp.Channel
-	query string
+	conn   *amqp.Connection
+	query  string
+	router Router
 }
 
-func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, *amqp.Channel, error) {
+func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error) {
 	channel, err := connection.Channel()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return &rmqConsumer{
-		conn:  connection,
-		query: queryName,
-	}, channel, nil
-}
-
-func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
-	results, err := c.ch.Consume(
-		c.query,
+	results, err := channel.Consume(
+		queryName,
 		"calc-controller",
 		true,
 		false,
@@ -38,30 +32,33 @@ func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
 		nil,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	quit := make(chan error)
-
+	ch := make(chan Message)
 	go func() {
 		fmt.Println("Waiting to consume...")
 		for event := range results {
-			fmt.Printf("New event is comming: %s", event.MessageId)
+			fmt.Printf("New event is coming: %s", event.MessageId)
 			msg := Message{
 				ContentType: event.ContentType,
 				Timestamp:   event.Timestamp,
-				MessageID:   event.MessageId,
+				MessageID:   MsgID(event.MessageId),
 				Body:        event.Body,
 			}
-			sub <- msg
+			ch <- msg
 		}
-		close(sub)
-		quit <- nil
+		close(ch)
+		fmt.Println("Consuming finished")
 	}()
 
-	if err = <-quit; err != nil {
-		return err
-	}
-	fmt.Println("Consuming finished")
-	return nil
+	return &rmqConsumer{
+		conn:   connection,
+		query:  queryName,
+		router: InitFilter(ch),
+	}, nil
+}
+
+func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID) {
+	c.router.AddRoute(ID, sub)
 }

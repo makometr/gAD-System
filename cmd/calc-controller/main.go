@@ -34,23 +34,26 @@ func main() {
 	}
 	defer rmqConn.Close()
 
-	rmqPub, channelPub, err := rmq.NewPublisher(rmqConn, cfg.RMQConfig.PubQueryName)
+	rmqPub, err := rmq.NewProducer(rmqConn, cfg.RMQConfig.PubQueryName)
 	if err != nil {
 		logger.Fatal("failed to create new publisher")
 	}
-	defer channelPub.Close()
-	rmqSub, channelSub, err := rmq.NewConsumer(rmqConn, cfg.RMQConfig.SubQueryName)
+	defer rmqPub.Close()
+
+	rmqSub, err := rmq.NewConsumer(rmqConn, cfg.RMQConfig.SubQueryName)
 	if err != nil {
 		logger.Fatal("failed to create new consumer")
 	}
-	defer channelSub.Close()
+
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.CCConfig.Port))
 	if err != nil {
 		logger.Error("failed to init RPC connection:", zap.Error(err))
 		return
 	}
 
+	exprCalculator := rmq.NewRemoteCalculator(rmqPub, rmqSub)
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterCalculatorServiceServer(grpcServer, server.NewCalculatorServer(rmqPub, rmqSub))
+	pb.RegisterCalculatorServiceServer(grpcServer, server.NewCalculatorServer(exprCalculator))
 	grpcServer.Serve(listen)
 }
