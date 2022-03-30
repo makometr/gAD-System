@@ -3,34 +3,28 @@ package rmq
 import (
 	"context"
 	"fmt"
+
 	"github.com/streadway/amqp"
 )
 
 type Consumer interface {
-	Consume(ctx context.Context, sub chan<- Message) error
+	Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID)
 }
 
 type rmqConsumer struct {
-	conn  *amqp.Connection
-	query string
+	conn   *amqp.Connection
+	query  string
+	router Router
 }
 
-func NewConsumer(connection *amqp.Connection, queryName string) Consumer {
-	return &rmqConsumer{
-		conn:  connection,
-		query: queryName,
-	}
-}
-
-func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
-	channel, err := c.conn.Channel()
+func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error) {
+	channel, err := connection.Channel()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer channel.Close()
 
 	results, err := channel.Consume(
-		c.query,
+		queryName,
 		"calc-controller",
 		true,
 		false,
@@ -39,28 +33,33 @@ func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- Message) error {
 		nil,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	quit := make(chan error)
+	fmt.Println("Consumer listened:", queryName)
 
+	ch := make(chan Message)
 	go func() {
 		for event := range results {
-			fmt.Printf("New event is comming: %s", event.MessageId)
 			msg := Message{
 				ContentType: event.ContentType,
 				Timestamp:   event.Timestamp,
-				MessageID:   event.MessageId,
+				MessageID:   MsgID(event.MessageId),
 				Body:        event.Body,
 			}
-			sub <- msg
+			fmt.Println("readed ig loop in consumer:", msg.MessageID, string(msg.Body))
+			ch <- msg
 		}
-		close(sub)
-		quit <- nil
+		close(ch)
 	}()
 
-	if err = <-quit; err != nil {
-		return err
-	}
-	return nil
+	return &rmqConsumer{
+		conn:   connection,
+		query:  queryName,
+		router: InitFilter(ch),
+	}, nil
+}
+
+func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID) {
+	c.router.AddRoute(ID, sub)
 }

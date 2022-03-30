@@ -24,8 +24,8 @@ services:
     environment:
       RABBITMQ_SERVER: gad-rabbitmq
       RABBITMQ_PORT: 5672
-      PUBLISH_QUERY_NAME: test
-      SUBSCRIBE_QUERY_NAME: test
+      PUBLISH_QUERY_NAME: cc-in
+      SUBSCRIBE_QUERY_NAME: cc-out
       CALCULATION_CONTROLLER_SERVER: 0.0.0.0
       CALCULATION_CONTROLLER_PORT: 50051
     depends_on:
@@ -46,7 +46,7 @@ services:
     networks:
       - gad-system
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
       interval: 30s
       timeout: 10s
       retries: 5

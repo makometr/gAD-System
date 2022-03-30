@@ -26,16 +26,28 @@ func main() {
 	cfg, err := config.InitConfig()
 	if err != nil {
 		logger.Error("failed to init cfg from with envconfig")
+		return
 	}
 
 	rmqConn, err := amqp.Dial(fmt.Sprintf("amqp://%s", cfg.RMQConfig.Server))
 	if err != nil {
 		logger.Fatal("failed to connect to rabbitmq:", zap.Error(err))
+		return
 	}
 	defer rmqConn.Close()
 
-	rmqPub := rmq.NewPublisher(rmqConn, cfg.RMQConfig.PubQueryName)
-	rmqSub := rmq.NewConsumer(rmqConn, cfg.RMQConfig.SubQueryName)
+	rmqPub, err := rmq.NewProducer(rmqConn, cfg.RMQConfig.PubQueryName)
+	if err != nil {
+		logger.Fatal("failed to create new publisher", zap.Error(err))
+		return
+	}
+	defer rmqPub.Close()
+
+	rmqSub, err := rmq.NewConsumer(rmqConn, cfg.RMQConfig.SubQueryName)
+	if err != nil {
+		logger.Fatal("failed to create new consumer", zap.Error(err))
+		return
+	}
 
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.CCConfig.Port))
 	if err != nil {
@@ -43,7 +55,9 @@ func main() {
 		return
 	}
 
+	exprCalculator := rmq.NewRemoteCalculator(rmqPub, rmqSub)
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterCalculatorServiceServer(grpcServer, server.NewCalculatorServer(rmqPub, rmqSub))
+	pb.RegisterCalculatorServiceServer(grpcServer, server.NewCalculatorServer(exprCalculator))
 	grpcServer.Serve(listen)
 }

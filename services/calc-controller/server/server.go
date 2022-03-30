@@ -3,85 +3,42 @@ package server
 import (
 	"context"
 	"fmt"
-	schema "gAD-System/internal/proto/expression/event"
 	pb "gAD-System/internal/proto/grpc/calculator/service"
 	"gAD-System/services/calc-controller/rmq"
-	"google.golang.org/protobuf/proto"
 	"sync"
 )
 
 type calculatorServer struct {
 	pb.CalculatorServiceServer
-	publisher rmq.Publisher
-	consumer  rmq.Consumer
+	exprCalculator rmq.ExprCalculator
 }
 
-func NewCalculatorServer(publisher rmq.Publisher, consumer rmq.Consumer) *calculatorServer {
+func NewCalculatorServer(exprCalc rmq.ExprCalculator) *calculatorServer {
 	return &calculatorServer{
-		publisher: publisher,
-		consumer:  consumer,
+		exprCalculator: exprCalc,
 	}
 }
 
 func (s *calculatorServer) DoCalculate(ctx context.Context, request *pb.CalculatorRequest) (*pb.CalculatorReply, error) {
-	input := make(chan rmq.Message)
-	output := make(chan rmq.Message)
+	payload := request.GetExpression()
 
+	// отравляем их "асинхронно" на вычисления
 	var wg sync.WaitGroup
-	wg.Add(3)
-
 	var results []string
-
-	go func() {
-		defer wg.Done()
-		payload := request.GetExpression()
-		for _, event := range payload {
-			serialize, err := msgToProtoBytes(event)
+	wg.Add(len(payload))
+	for _, expr := range payload {
+		go func(expr string) {
+			result, err := s.exprCalculator.CalculateExpression(expr)
 			if err != nil {
-				fmt.Printf("error converting message to proto bytes: %v", err)
-				continue
+				fmt.Println("Error in DoCalculate():", err)
 			}
-			msg := rmq.Message{
-				ContentType: "text/plain",
-				MessageID:   event,
-				Body:        serialize,
-			}
-			input <- msg
-		}
-		close(input)
-	}()
-
-	go func() {
-		defer wg.Done()
-		err := s.publisher.Publish(ctx, input)
-		if err != nil {
-			fmt.Printf("error while publishing events: %v", err)
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		err := s.consumer.Consume(ctx, output)
-		if err != nil {
-			fmt.Printf("error while consuming events: %v", err)
-		}
-	}()
+			results = append(results, result)
+			wg.Done()
+		}(expr)
+	}
 
 	wg.Wait()
-	for event := range output {
-		fmt.Printf("New event in DoCalculation: %s", event)
-		results = append(results, event.MessageID)
-	}
 
 	reply := pb.CalculatorReply{Result: append(results, "EVERYTHING WROCKS!")}
 	return &reply, nil
-}
-
-func msgToProtoBytes(message string) ([]byte, error) {
-	event := &schema.Event{Expression: message}
-	out, err := proto.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
