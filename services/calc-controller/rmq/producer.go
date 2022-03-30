@@ -41,7 +41,7 @@ func NewProducer(connection *amqp.Connection, queryName string) (Producer, error
 }
 
 func (p *rmqProducer) SendExpresion(ctx context.Context, expr ExpressionWithID) error {
-	serialize, err := expr.ToProto()
+	serialize, err := MsgToProtoBytes(expr.Expr)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrProtobuffSerialize, err)
 	}

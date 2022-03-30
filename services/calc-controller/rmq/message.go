@@ -23,17 +23,6 @@ type ExpressionWithID struct {
 	Id   MsgID
 }
 
-func (e ExpressionWithID) ToProto() ([]byte, error) {
-	// event := &schema.Event{Expression: e.expr}
-	// out, err := proto.Marshal(event)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return out, nil
-
-	return nil, nil
-}
-
 func MsgToProtoBytes(message string) ([]byte, error) {
 	event := schema.Event{Expression: message}
 	out, err := proto.Marshal(&event)

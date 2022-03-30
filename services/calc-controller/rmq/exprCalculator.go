@@ -29,11 +29,12 @@ func (rc *RemoteCalculator) CalculateExpression(expr string) (string, error) {
 	rc.consumer.Consume(ctx, recieveResult, MsgID(ID))
 	err := rc.producer.SendExpresion(ctx, ExpressionWithID{Expr: expr, Id: MsgID(ID)})
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	select {
 	case result := <-recieveResult:
+		fmt.Println("Received in calc expression:", result)
 		return result.Expr, nil
 	case <-ctx.Done():
 		return "", fmt.Errorf("calc error")

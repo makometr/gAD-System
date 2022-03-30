@@ -15,16 +15,13 @@ func InitFilter(inputFromRMQ <-chan Message) Router {
 	go func() {
 		for msg := range inputFromRMQ {
 			sendChan := filter.routingTable[msg.MessageID]
-
 			expr, err := ProtoToMsg(msg.Body) // TODO
 			if err != nil {
-				fmt.Printf("proto to msg failed(")
-				expr = "success"
+				expr = "convertation unsuccessful"
 			}
 
 			sendChan <- ExpressionWithID{Expr: expr, Id: msg.MessageID}
 			delete(filter.routingTable, msg.MessageID)
-			fmt.Println("Msg routed with id:", msg.MessageID)
 		}
 	}()
 
@@ -36,5 +33,4 @@ func (r *Router) AddRoute(ID MsgID, goal chan<- ExpressionWithID) {
 		fmt.Println("key existed in router-table!: ", val)
 	}
 	r.routingTable[ID] = goal
-	fmt.Println("Msg id registrated in router:", ID)
 }

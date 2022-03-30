@@ -2,7 +2,6 @@ package rmq
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/streadway/amqp"
 )
@@ -37,9 +36,7 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 
 	ch := make(chan Message)
 	go func() {
-		fmt.Println("Waiting to consume...")
 		for event := range results {
-			fmt.Printf("New event is coming: %s", event.MessageId)
 			msg := Message{
 				ContentType: event.ContentType,
 				Timestamp:   event.Timestamp,
@@ -49,7 +46,6 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 			ch <- msg
 		}
 		close(ch)
-		fmt.Println("Consuming finished")
 	}()
 
 	return &rmqConsumer{
