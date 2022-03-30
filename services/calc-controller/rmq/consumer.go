@@ -2,6 +2,7 @@ package rmq
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/streadway/amqp"
 )
@@ -21,6 +22,7 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 	if err != nil {
 		return nil, err
 	}
+
 	results, err := channel.Consume(
 		queryName,
 		"calc-controller",
@@ -34,6 +36,8 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 		return nil, err
 	}
 
+	fmt.Println("Consumer listened:", queryName)
+
 	ch := make(chan Message)
 	go func() {
 		for event := range results {
@@ -43,6 +47,7 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 				MessageID:   MsgID(event.MessageId),
 				Body:        event.Body,
 			}
+			fmt.Println("readed ig loop in consumer:", msg.MessageID, string(msg.Body))
 			ch <- msg
 		}
 		close(ch)

@@ -12,8 +12,8 @@ type Config struct {
 type RabbitMQConfig struct {
 	Server       string `envconfig:"RABBITMQ_SERVER" default:"localhost"`
 	Port         string `envconfig:"RABBITMQ_PORT" default:"5672"`
-	PubQueryName string `envconfig:"PUBLISH_QUERY_NAME" default:"test"`
-	SubQueryName string `envconfig:"SUBSCRIBE_QUERY_NAME" default:"test"`
+	PubQueryName string `envconfig:"PUBLISH_QUERY_NAME" default:"cc-in"`
+	SubQueryName string `envconfig:"SUBSCRIBE_QUERY_NAME" default:"cc-out"`
 }
 
 // CalcControllerConfig stores configs for GRPC connection

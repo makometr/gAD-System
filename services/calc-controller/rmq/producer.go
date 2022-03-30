@@ -19,22 +19,22 @@ type Producer interface {
 }
 
 type rmqProducer struct {
-	conn  *amqp.Connection
-	ch    *amqp.Channel
-	query string
+	conn      *amqp.Connection
+	ch        *amqp.Channel
+	queueName string
 	// in    chan Message
 }
 
-func NewProducer(connection *amqp.Connection, queryName string) (Producer, error) {
+func NewProducer(connection *amqp.Connection, queueName string) (Producer, error) {
 	channel, err := connection.Channel()
 	if err != nil {
 		return nil, err
 	}
 
 	producer := &rmqProducer{
-		conn:  connection,
-		ch:    channel,
-		query: queryName,
+		conn:      connection,
+		ch:        channel,
+		queueName: queueName,
 	}
 
 	return producer, nil
@@ -46,16 +46,19 @@ func (p *rmqProducer) SendExpresion(ctx context.Context, expr ExpressionWithID) 
 		return fmt.Errorf("%w: %v", ErrProtobuffSerialize, err)
 	}
 
-	err = p.ch.Publish("", p.query, false, false, amqp.Publishing{
+	msg := amqp.Publishing{
 		ContentType: "text/plain",
 		MessageId:   string(expr.Id),
 		Timestamp:   time.Now(),
 		Body:        serialize,
-	})
+	}
 
+	err = p.ch.Publish("", p.queueName, false, false, msg)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrAMQSend, err)
 	}
+
+	fmt.Println("Sended to", p.queueName)
 
 	return nil
 }
