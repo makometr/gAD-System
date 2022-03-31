@@ -70,11 +70,3 @@ build-calc-worker:
 
 
 build: build-gad-manager build-calc-controller build-calc-worker
-
-compose:
-	@echo Deleting images...
-	docker-compose rm -f
-	@echo Building...
-	docker-compose build -q
-	@echo Upping...
-	docker-compose up
