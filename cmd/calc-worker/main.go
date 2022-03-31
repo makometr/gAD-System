@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"gAD-System/services/calc-worker/config"
 	"gAD-System/services/calc-worker/parser"
-	"time"
+	"gAD-System/services/calc-worker/rmq"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
-	schema "gAD-System/internal/proto/expression/event"
-
-	"github.com/streadway/amqp"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 )
 
 func main() {
@@ -24,83 +24,47 @@ func main() {
 	cfg, err := config.InitConfig()
 	if err != nil {
 		logger.Error("failed to init cfg from with envconfig")
-	}
-
-	rmqConn, err := amqp.Dial(fmt.Sprintf("amqp://%s", cfg.RMQConfig.Server))
-	if err != nil {
-		logger.Fatal("failed to connect to rabbitmq:", zap.Error(err))
-	}
-	defer rmqConn.Close()
-
-	ch, err := rmqConn.Channel()
-	if err != nil {
-		logger.Error("failed to open channel")
-		return
-	}
-	defer ch.Close()
-
-	exprs, err := ch.Consume(
-		cfg.RMQConfig.PubQueryName,
-		"calc-worker",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		logger.Error("failed to open consume")
 		return
 	}
 
-	end := make(chan struct{})
+	rmqConn, err := rmq.InitConnection(cfg)
+	if err != nil {
+		logger.Error("rmq connection init error ", zap.Error(err))
+		return
+	}
+	logger.Info("RMQ connection succeeded:", zap.Any("rmq", cfg.RMQConfig))
 
+	errorChan := make(chan error)
 	go func() {
-		for msg := range exprs {
-			expr, err := protoToMsg(msg.Body)
-			if err != nil {
-				logger.Error("proto to msg error", zap.Error(err), zap.String("msg id", msg.MessageId))
-			}
-
-			result, err := parser.CalculateSimpleExpression(expr)
-			if err != nil {
-				logger.Error("err in calc expr", zap.Error(err), zap.String("msg id", msg.MessageId))
-			}
-
-			body, err := msgToProtoBytes(result)
-			if err != nil {
-				logger.Error("msg to proto error", zap.Error(err), zap.String("msg id", msg.MessageId))
-			}
-
-			err = ch.Publish("", cfg.RMQConfig.SubQueryName, false, false, amqp.Publishing{
-				ContentType: msg.ContentType,
-				MessageId:   msg.MessageId,
-				Timestamp:   time.Now(),
-				Body:        body,
-			})
-			if err != nil {
-				logger.Error("msg rmq publishing", zap.Error(err), zap.String("msg id", msg.MessageId), zap.String("queue name", cfg.RMQConfig.SubQueryName))
-			}
+		for err := range errorChan {
+			logger.Error("error in calculate chain:", zap.Error(err))
 		}
-		end <- struct{}{}
 	}()
 
-	<-end
-}
-
-func msgToProtoBytes(message string) ([]byte, error) {
-	event := schema.Event{Expression: message}
-	out, err := proto.Marshal(&event)
-	if err != nil {
-		return nil, err
+	workerCount := 8
+	wg := sync.WaitGroup{}
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			rmqConn.CalculateExpressions(errorChan, parser.CalculateSimpleExpression)
+			wg.Done()
+		}()
 	}
-	return out, nil
-}
 
-func protoToMsg(data []byte) (string, error) {
-	event := schema.Event{}
-	if err := proto.Unmarshal(data, &event); err != nil {
-		return "", err
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+
+	<-termChan
+
+	fmt.Print("RMQ connection closing...")
+	if err := rmqConn.Close(); err != nil {
+		logger.Error("RMQ conn close error:", zap.Error(err))
 	}
-	return event.Expression, nil
+	fmt.Print(" closed.\n")
+
+	fmt.Print("Workers are closing...")
+	wg.Wait()
+	fmt.Print(" closed.\n")
+
+	close(errorChan)
 }
