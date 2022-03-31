@@ -59,17 +59,17 @@ func main() {
 		for msg := range exprs {
 			expr, err := protoToMsg(msg.Body)
 			if err != nil {
-				fmt.Println("proto", err)
+				logger.Error("proto to msg error", zap.Error(err), zap.String("msg id", msg.MessageId))
 			}
 
 			result, err := parser.CalculateSimpleExpression(expr)
 			if err != nil {
-				fmt.Println("error in calc expr", err)
+				logger.Error("err in calc expr", zap.Error(err), zap.String("msg id", msg.MessageId))
 			}
 
 			body, err := msgToProtoBytes(result)
 			if err != nil {
-				fmt.Println("error in proto", err)
+				logger.Error("msg to proto error", zap.Error(err), zap.String("msg id", msg.MessageId))
 			}
 
 			err = ch.Publish("", cfg.RMQConfig.SubQueryName, false, false, amqp.Publishing{
@@ -79,7 +79,7 @@ func main() {
 				Body:        body,
 			})
 			if err != nil {
-				fmt.Println("error in msg publishing", err)
+				logger.Error("msg rmq publishing", zap.Error(err), zap.String("msg id", msg.MessageId), zap.String("queue name", cfg.RMQConfig.SubQueryName))
 			}
 		}
 		end <- struct{}{}
