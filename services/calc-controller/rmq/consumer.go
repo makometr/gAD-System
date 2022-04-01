@@ -9,12 +9,14 @@ import (
 
 type Consumer interface {
 	Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID)
+	Close() error
 }
 
 type rmqConsumer struct {
-	conn   *amqp.Connection
-	query  string
-	router Router
+	conn    *amqp.Connection
+	channel *amqp.Channel
+	query   string
+	router  Router
 }
 
 func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error) {
@@ -54,12 +56,17 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 	}()
 
 	return &rmqConsumer{
-		conn:   connection,
-		query:  queryName,
-		router: InitFilter(ch),
+		conn:    connection,
+		channel: channel,
+		query:   queryName,
+		router:  InitFilter(ch),
 	}, nil
 }
 
 func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID) {
 	c.router.AddRoute(ID, sub)
+}
+
+func (c *rmqConsumer) Close() error {
+	return c.channel.Close()
 }
