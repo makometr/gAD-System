@@ -1,15 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"gAD-System/services/gad-manager/config"
 	"gAD-System/services/gad-manager/domain"
 	"gAD-System/services/gad-manager/server"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"go.uber.org/zap"
 )
 
 func main() {
+	ctx := context.TODO()
+	defer log.Println("server stopped successful")
 	logger, _ := zap.NewProduction()
 	defer func() {
 		if err := logger.Sync(); err != nil {
@@ -37,8 +44,24 @@ func main() {
 	calculator := domain.NewCalculator(calcRepo)
 	handlers := server.Handlers{Calculator: calculator}
 
-	if err := server.InitREST(cfg, &handlers); err != nil {
-		logger.Error("failed to init GIN-REST API server", zap.Error(err))
-	}
+	serverClosed := make(chan struct{})
+	srv := server.LaunchREST(cfg, &handlers)
+	go func() {
+		err := srv.ListenAndServe()
+		log.Println("server closed: ", err)
+		serverClosed <- struct{}{}
+	}()
 
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		s := <-sigCh
+		log.Printf("got signal %v, attempting graceful shutdown", s)
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Println("server shutdowned with err:", err)
+		}
+	}()
+
+	<-serverClosed
 }

@@ -3,18 +3,18 @@ package server
 import (
 	"fmt"
 	"gAD-System/services/gad-manager/config"
+	"net/http"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// InitREST inits REST API server for outer clients
-func InitREST(cfg *config.Config, h *Handlers) error {
-	r := newRouter(h)
-	if err := r.Run(fmt.Sprintf(":%s", cfg.GMConfig.Port)); err != nil {
-		return err
+// LaunchREST inits REST API server for outer clients
+func LaunchREST(cfg *config.Config, h *Handlers) *http.Server {
+	return &http.Server{
+		Addr:    fmt.Sprintf(":%s", cfg.GMConfig.Port),
+		Handler: newRouter(h),
 	}
-	return nil
 }
 
 // InitCalculateRPC provide grps connection

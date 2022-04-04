@@ -11,7 +11,7 @@ type Config struct {
 // GadManagerConfig stores configs for REST API Gin Server
 type GadManagerConfig struct {
 	Server string `envconfig:"GAD_MANAGER_SERVER" default:"localhost"`
-	Port   string `envconfig:"GAD_MANAGER_PORT" default:":8080"`
+	Port   string `envconfig:"GAD_MANAGER_PORT" default:"8080"`
 }
 
 // CalcControllerConfig stores configs for GRPC connection
