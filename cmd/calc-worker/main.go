@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"gAD-System/services/calc-worker/config"
-	"gAD-System/services/calc-worker/parser"
 	"gAD-System/services/calc-worker/rmq"
 	"os"
 	"os/signal"
@@ -44,12 +43,12 @@ func main() {
 	workerCount := 8
 	wg := sync.WaitGroup{}
 	wg.Add(workerCount)
-	for i := 0; i < workerCount; i++ {
-		go func() {
-			rmqConn.CalculateExpressions(errorChan, parser.CalculateSimpleExpression)
-			wg.Done()
-		}()
-	}
+	// for i := 0; i < workerCount; i++ {
+	// 	go func() {
+	// 		rmqConn.CalculateExpressions(errorChan, parser.CalculateSimpleExpression)
+	// 		wg.Done()
+	// 	}()
+	// }
 
 	termChan := make(chan os.Signal, 1)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)

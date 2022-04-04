@@ -4,7 +4,6 @@ import (
 	"fmt"
 	schema "gAD-System/internal/proto/expression/event"
 	"gAD-System/services/calc-worker/config"
-	"time"
 
 	"github.com/streadway/amqp"
 	"google.golang.org/protobuf/proto"
@@ -15,8 +14,13 @@ type Connection struct {
 	connection *amqp.Connection
 	channelIn  *amqp.Channel
 	channelOut *amqp.Channel
-	qNameIn    string
-	qNameOut   string
+
+	producerResult *ResultProcucer
+
+	consumerPlus  *OperationConsumer
+	consumerMinus *OperationConsumer
+	consumerMulti *OperationConsumer
+	consumerMod   *OperationConsumer
 }
 
 // InitConnection inits connections and in-out channels with RMQ with provided config
@@ -37,7 +41,71 @@ func InitConnection(cfg *config.Config) (*Connection, error) {
 	}
 
 	return &Connection{connection: rmqConn, channelIn: rmqChanIn, channelOut: rmqChanOut,
-		qNameIn: cfg.RMQConfig.PubQueryName, qNameOut: cfg.RMQConfig.SubQueryName}, nil
+		consumerPlus:  newOperationConsumer(rmqChanIn, cfg.RMQConfig.QNamePLus),
+		consumerMinus: newOperationConsumer(rmqChanIn, cfg.RMQConfig.QNameMinus),
+		consumerMulti: newOperationConsumer(rmqChanIn, cfg.RMQConfig.QNameMulti),
+		consumerMod:   newOperationConsumer(rmqChanIn, cfg.RMQConfig.QNameMod),
+	}, nil
+}
+
+type OperationConsumer struct {
+	out chan<- string // expr to calculate type of channel
+}
+
+func newOperationConsumer(ch *amqp.Channel, qName string) *OperationConsumer {
+	out := make(chan string) // expr result  type of channel
+	exprs, err := ch.Consume(qName, "",
+		true, false, false, false, nil,
+	)
+	if err != nil {
+		// log fmt.Errorf("error consuming open: %w", err)
+		return nil
+	}
+
+	go func() {
+		for msg := range exprs {
+			// раскодируем сообщение
+			expr, _ := protoToMsg(msg.Body)
+
+			// если ошибка, то что???
+			// if err != nil {
+			// return nil, fmt.Errorf("error proto to msg with id = %s: %w", msg.MessageId, err)
+			// continue
+			// }
+
+			// отправляем раскодированное сообщение одному из воркеров через
+			out <- string(expr)
+		}
+	}()
+
+	return &OperationConsumer{out: out}
+}
+
+type ResultProcucer struct {
+	in <-chan string // result of expr type of channel
+}
+
+func newResultProducer(ch *amqp.Channel, qName string) (*ResultProcucer, error) {
+	in := make(chan string) // expr result type of channel
+
+	go func() {
+
+		for result := range in {
+			fmt.Println(result)
+			err := ch.Publish("", qName, false, false, amqp.Publishing{
+				// ContentType: msg.ContentType,
+				// MessageId:   msg.MessageId,
+				// Timestamp:   time.Now(),
+				// Body:        body,
+			})
+			if err != nil {
+				// ????????????????????????
+				// fmt.Errorf("error msg publishing with id = %s to queue = %s: %w", msg.MessageId, c.qNameOut, err)
+			}
+		}
+	}()
+
+	return &ResultProcucer{in: in}, nil
 }
 
 // Close closes connection to rmq, to graceful shutdown
@@ -52,50 +120,6 @@ func (c *Connection) Close() error {
 		return err
 	}
 	return nil
-}
-
-// CalculateExpressions calculation worker for go-call style.
-// Depends on open chans from RMQ, no need to close by hands. Worker exited when connection closed.
-// TODO error handling
-func (c *Connection) CalculateExpressions(errChan chan<- error, calculator func(string) (string, error)) {
-	exprs, err := c.channelIn.Consume(c.qNameIn, "",
-		true, false, false, false, nil,
-	)
-	if err != nil {
-		errChan <- fmt.Errorf("error consuming open: %w", err)
-		return
-	}
-
-	for msg := range exprs {
-		expr, err := protoToMsg(msg.Body)
-		if err != nil {
-			errChan <- fmt.Errorf("error proto to msg with id = %s: %w", msg.MessageId, err)
-			// continue
-		}
-
-		result, err := calculator(expr)
-		if err != nil {
-			errChan <- fmt.Errorf("error calculator msg with id = %s: %w", msg.MessageId, err)
-			// continue
-		}
-
-		body, err := msgToProtoBytes(result)
-		if err != nil {
-			errChan <- fmt.Errorf("error msg with id = %s to proto: %w", msg.MessageId, err)
-			// continue
-		}
-
-		err = c.channelOut.Publish("", c.qNameOut, false, false, amqp.Publishing{
-			ContentType: msg.ContentType,
-			MessageId:   msg.MessageId,
-			Timestamp:   time.Now(),
-			Body:        body,
-		})
-		if err != nil {
-			errChan <- fmt.Errorf("error msg publishing with id = %s to queue = %s: %w", msg.MessageId, c.qNameOut, err)
-			continue
-		}
-	}
 }
 
 func msgToProtoBytes(message string) ([]byte, error) {
