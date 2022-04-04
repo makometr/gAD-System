@@ -36,6 +36,22 @@ services:
     networks:
       - gad-system
 
+  calc-worker:
+    build:
+      context: ../
+      dockerfile: ./docker/calc-worker.Dockerfile
+    environment:
+      RABBITMQ_SERVER: gad-rabbitmq
+      RABBITMQ_PORT: 5672
+      PUBLISH_QUERY_NAME: cc-in
+      SUBSCRIBE_QUERY_NAME: cc-out
+    depends_on:
+      - gad-rabbitmq
+      - calc-controller
+    restart: on-failure
+    networks:
+      - gad-system
+
   gad-rabbitmq:
     build:
       context: ../

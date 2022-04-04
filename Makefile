@@ -21,15 +21,22 @@ docker-build-gad-manager:
 	@echo "${OK_COLOR}==> Building docker image for gad-manager${NO_COLOR}\n"
 	@docker build --no-cache -t gad-manager:v0.1 ./ -f ./docker/gad-manager.Dockerfile
 
+# docker-build-gad-manager:
+# 	@docker build -t gad-test ./ -f docker\gad-manager.Dockerfile
+
 docker-build-calc-controller:
 	@echo "${OK_COLOR}==> Building docker image for calc-controller${NO_COLOR}\n"
 	@docker build --no-cache -t calc-controller:v0.1 ./ -f ./docker/calc-controller.Dockerfile
+
+docker-build-calc-worker:
+	@echo "${OK_COLOR}==> Building docker image for calc-worker${NO_COLOR}\n"
+	@docker build --no-cache -t calc-worker:v0.1 ./ -f ./docker/calc-worker.Dockerfile
 
 docker-build-rabbitmq:
 	@echo "${OK_COLOR}==> Building docker image for rabbitmq${NO_COLOR}\n"
 	@docker build --no-cache -t gad-rabbitmq:v0.1 ./ -f ./docker/rmq/rabbitmq.Dockerfile
 
-docker-build: docker-build-gad-manager docker-build-calc-controller docker-build-rabbitmq
+docker-build: docker-build-gad-manager docker-build-calc-controller docker-build-calc-worker docker-build-rabbitmq
 
 deps:
 	git config --global http.https://gopkg.in.followRedirects true
@@ -57,8 +64,9 @@ build-calc-controller:
 	@echo "${OK_COLOR}==> Building calc-controller${NO_COLOR}\n"
 	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-controller.exe cmd/calc-controller/main.go
 
-docker-build-gad-manager:
-	@docker build -t gad-test ./ -f docker\gad-manager.Dockerfile
+build-calc-worker:
+	@echo "${OK_COLOR}==> Building calc-worker${NO_COLOR}\n"
+	@CGO_ENABLED=0 go build -o ${BUILD_DIR}/calc-worker.exe cmd/calc-worker/main.go
 
 
-build: build-gad-manager build-calc-controller
+build: build-gad-manager build-calc-controller build-calc-worker
