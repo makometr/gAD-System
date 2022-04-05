@@ -7,3 +7,25 @@ option go_package = "internal/proto/expression/event";
 message Event {
   string expression = 1;
 }
+
+
+message AExpression {
+  int64 lhs = 1;
+  int64 rhs = 2;
+  enum Operation {
+    PLUS = 0;
+    MINUS = 1;
+    MULTI = 2;
+    DIV = 3;
+    MOD = 4;
+  }
+  Operation operation = 3;
+}
+
+
+message AResult {
+  oneof result {
+    int64 product = 1;
+    string errorMsg = 2;
+  }
+}
