@@ -22,6 +22,11 @@ func NewRMQOutputStream(cfg *config.Config, rmq *Connection) (OutputExprStream, 
 }
 
 func (c *RMQOutputStream) Result(input <-chan string) (<-chan struct{}, error) {
+	q, err := c.channelOut.QueueDeclare(c.qName, true, false, false, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error queue connection %s: %w", c.qName, err)
+	}
+
 	done := make(chan struct{})
 	go func() {
 		defer func() {
@@ -29,7 +34,7 @@ func (c *RMQOutputStream) Result(input <-chan string) (<-chan struct{}, error) {
 		}()
 		for result := range input {
 			// time.Sleep(time.Second * 10)
-			err := c.channelOut.Publish("", c.qName, false, false, amqp.Publishing{
+			err := c.channelOut.Publish("", q.Name, false, false, amqp.Publishing{
 				ContentType: "text/plain",
 				MessageId:   "111",
 				Timestamp:   time.Now(),

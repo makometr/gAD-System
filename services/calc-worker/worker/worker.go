@@ -33,7 +33,7 @@ var operations = map[rmq.Operation]calcFunction{
 type WorkerConfig struct {
 	Input     <-chan string // ExprToCalc
 	Output    chan<- string // ResultExpr
-	Operation rmq.Operation
+	Operation rmq.Operation // TODO rename
 	DelayGen  func() time.Duration
 }
 
@@ -51,35 +51,51 @@ func StartWorkers(ctx context.Context, cfg *config.Config, input rmq.InputExprSt
 	if err != nil {
 		return nil, fmt.Errorf("cant init in-plus stream: %w", err)
 	}
-	for i := 0; i < cfg.WConfig.CountPlus; i++ {
-		workersGroup.Add(1)
-		go func() {
-			startWorker(ctx, WorkerConfig{
-				Input:     chPlus,
-				Output:    chResult,
-				Operation: rmq.Plus,
-				DelayGen:  func() time.Duration { return time.Second * 10 },
-			})
-			workersGroup.Done()
-		}()
+	plusCfg := WorkerConfig{Input: chPlus, Output: chResult, Operation: rmq.Plus,
+		DelayGen: nil,
+		// DelayGen: func() time.Duration { return time.Second * 10 },
 	}
+	startOperationWorker(plusCfg, cfg.WConfig.CountPlus, &workersGroup)
 
 	chMinus, err := input.Minus()
 	if err != nil {
 		return nil, fmt.Errorf("cant init in-minus stream: %w", err)
 	}
-	for i := 0; i < cfg.WConfig.CountMinus; i++ {
-		workersGroup.Add(1)
-		go func() {
-			startWorker(ctx, WorkerConfig{
-				Input:     chMinus,
-				Output:    chResult,
-				Operation: rmq.Minus,
-				DelayGen:  nil,
-			})
-			workersGroup.Done()
-		}()
+	minusCfg := WorkerConfig{Input: chMinus, Output: chResult, Operation: rmq.Minus,
+		DelayGen: nil,
+		// DelayGen: func() time.Duration { return time.Second * 10 },
 	}
+	startOperationWorker(minusCfg, cfg.WConfig.CountPlus, &workersGroup)
+
+	chMulti, err := input.Milti()
+	if err != nil {
+		return nil, fmt.Errorf("cant init in-minus stream: %w", err)
+	}
+	multiCfg := WorkerConfig{Input: chMulti, Output: chResult, Operation: rmq.Multi,
+		DelayGen: nil,
+		// DelayGen: func() time.Duration { return time.Second * 10 },
+	}
+	startOperationWorker(multiCfg, cfg.WConfig.CountPlus, &workersGroup)
+
+	chDiv, err := input.Div()
+	if err != nil {
+		return nil, fmt.Errorf("cant init in-minus stream: %w", err)
+	}
+	divCfg := WorkerConfig{Input: chDiv, Output: chResult, Operation: rmq.Div,
+		DelayGen: nil,
+		// DelayGen: func() time.Duration { return time.Second * 10 },
+	}
+	startOperationWorker(divCfg, cfg.WConfig.CountPlus, &workersGroup)
+
+	chMod, err := input.Mod()
+	if err != nil {
+		return nil, fmt.Errorf("cant init in-minus stream: %w", err)
+	}
+	modCfg := WorkerConfig{Input: chMod, Output: chResult, Operation: rmq.Mod,
+		DelayGen: nil,
+		// DelayGen: func() time.Duration { return time.Second * 10 },
+	}
+	startOperationWorker(modCfg, cfg.WConfig.CountPlus, &workersGroup)
 
 	go func() {
 		workersGroup.Wait() // Воркеры завершили работу и передали ответы на отправку
@@ -91,12 +107,18 @@ func StartWorkers(ctx context.Context, cfg *config.Config, input rmq.InputExprSt
 	return done, nil
 }
 
-func startWorker(ctx context.Context, cfg WorkerConfig) {
-	for in := range cfg.Input {
-		if cfg.DelayGen != nil {
-			time.Sleep(cfg.DelayGen())
-		}
-		// cfg.Output <- ResultExpr{result: operations[cfg.Operation](in.lhs, in.rhs), ID: in.ID}
-		cfg.Output <- in + "+"
+func startOperationWorker(cfg WorkerConfig, count int, wg *sync.WaitGroup) {
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for in := range cfg.Input {
+				if cfg.DelayGen != nil {
+					time.Sleep(cfg.DelayGen())
+				}
+				// cfg.Output <- ResultExpr{result: operations[cfg.Operation](in.lhs, in.rhs), ID: in.ID}
+				cfg.Output <- in + "+"
+			}
+		}()
 	}
 }

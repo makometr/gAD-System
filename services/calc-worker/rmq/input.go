@@ -52,8 +52,13 @@ func (c *RMQInputStream) Close() error {
 }
 
 func newExpressionConsumer(ch *amqp.Channel, qName string) (chan string, error) {
-	toCalc := make(chan string) // expr result  type of channel
-	exprs, err := ch.Consume(qName, "",
+	q, err := ch.QueueDeclare(qName, true, false, false, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error queue connection %s: %w", qName, err)
+	}
+
+	toCalc := make(chan string) // expr result type of channel
+	exprs, err := ch.Consume(q.Name, "",
 		true, false, false, false, nil,
 	)
 	if err != nil {
