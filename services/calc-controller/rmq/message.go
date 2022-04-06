@@ -4,23 +4,24 @@ import (
 	"time"
 
 	schema "gAD-System/internal/proto/expression/event"
+	"gAD-System/services/calc-controller/model"
 
 	"google.golang.org/protobuf/proto"
 )
 
-type MsgID string
+// type MsgID string
 
 type Message struct {
 	ContentType string
 	Timestamp   time.Time
-	MessageID   MsgID
+	MessageID   model.MsgID
 	Body        []byte
 }
 
 // ExpressionWithID linked raw expression with id
 type ExpressionWithID struct {
 	Expr string
-	Id   MsgID
+	Id   model.MsgID
 }
 
 func MsgToProtoBytes(message string) ([]byte, error) {

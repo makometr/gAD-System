@@ -1,26 +1,31 @@
 package rmq
 
 import (
+	"encoding/json"
 	"fmt"
+	"gAD-System/services/calc-controller/model"
 )
 
 type Router struct {
 	input        <-chan Message
-	routingTable map[MsgID]chan<- ExpressionWithID
+	routingTable map[model.MsgID]chan<- model.ResultFromCalc
 }
 
 func InitFilter(inputFromRMQ <-chan Message) Router {
-	filter := Router{input: inputFromRMQ, routingTable: make(map[MsgID]chan<- ExpressionWithID)}
+	filter := Router{input: inputFromRMQ, routingTable: make(map[model.MsgID]chan<- model.ResultFromCalc)}
 
 	go func() {
 		for msg := range inputFromRMQ {
 			sendChan := filter.routingTable[msg.MessageID]
-			expr, err := ProtoToMsg(msg.Body) // TODO
+			// expr, err := ProtoToMsg(msg.Body) // TODO
+			var result model.Result
+			err := json.Unmarshal(msg.Body, &result)
 			if err != nil {
-				expr = "convertation unsuccessful"
+				fmt.Println("error while unmarhsal result", err)
+				result = model.Result{}
 			}
 
-			sendChan <- ExpressionWithID{Expr: expr, Id: msg.MessageID}
+			sendChan <- model.ResultFromCalc{Result: result, ID: msg.MessageID}
 			delete(filter.routingTable, msg.MessageID)
 		}
 	}()
@@ -28,7 +33,7 @@ func InitFilter(inputFromRMQ <-chan Message) Router {
 	return filter
 }
 
-func (r *Router) AddRoute(ID MsgID, goal chan<- ExpressionWithID) {
+func (r *Router) AddRoute(ID model.MsgID, goal chan<- model.ResultFromCalc) {
 	if val, ok := r.routingTable[ID]; ok {
 		fmt.Println("key existed in router-table!: ", val)
 	}

@@ -36,7 +36,7 @@ func (c *RMQOutputStream) Result(input <-chan string) (<-chan struct{}, error) {
 			// time.Sleep(time.Second * 10)
 			err := c.channelOut.Publish("", q.Name, false, false, amqp.Publishing{
 				ContentType: "text/plain",
-				MessageId:   "111",
+				MessageId:   "0",
 				Timestamp:   time.Now(),
 				Body:        []byte(result),
 			})

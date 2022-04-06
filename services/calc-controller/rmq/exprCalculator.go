@@ -3,12 +3,13 @@ package rmq
 import (
 	"context"
 	"fmt"
+	"gAD-System/services/calc-controller/model"
 	"strconv"
 	"sync"
 )
 
 type ExprCalculator interface {
-	CalculateExpression(string) (string, error)
+	CalculateExpression(model.Expression) (model.Result, error)
 }
 
 type RemoteCalculator struct {
@@ -21,23 +22,23 @@ func NewRemoteCalculator(prod Producer, cons Consumer) *RemoteCalculator {
 	return &RemoteCalculator{producer: prod, consumer: cons, IDGEN: IDgenerator{Mutex: sync.Mutex{}}}
 }
 
-func (rc *RemoteCalculator) CalculateExpression(expr string) (string, error) {
+func (rc *RemoteCalculator) CalculateExpression(expr model.Expression) (model.Result, error) {
 	ID := rc.IDGEN.GenereateID() // TODO normalno generate ID
 	ctx := context.Background()
 
-	recieveResult := make(chan ExpressionWithID)
-	rc.consumer.Consume(ctx, recieveResult, MsgID(ID))
-	err := rc.producer.SendExpresion(ctx, ExpressionWithID{Expr: expr, Id: MsgID(ID)})
+	recieveResult := make(chan model.ResultFromCalc)
+	rc.consumer.Consume(ctx, recieveResult, ID)
+	err := rc.producer.SendExpresion(ctx, model.ExprToCalc{Expression: expr, ID: ID})
 	if err != nil {
-		return "", err
+		return model.Result{}, err
 	}
 
 	select {
 	case result := <-recieveResult:
 		fmt.Println("Received in calc expression:", result)
-		return result.Expr, nil
+		return model.Result{result.Result.Result}, nil
 	case <-ctx.Done():
-		return "", fmt.Errorf("calc error")
+		return model.Result{}, fmt.Errorf("calc error")
 
 	}
 }
@@ -47,12 +48,12 @@ type IDgenerator struct {
 	sync.Mutex
 }
 
-func (idg *IDgenerator) GenereateID() string {
+func (idg *IDgenerator) GenereateID() model.MsgID {
 	idg.Lock()
 	defer idg.Unlock()
 	defer func() {
 		idg.counter++
 	}()
 
-	return strconv.Itoa(idg.counter)
+	return model.MsgID(strconv.Itoa(idg.counter))
 }

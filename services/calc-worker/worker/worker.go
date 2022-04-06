@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"gAD-System/services/calc-worker/config"
 	"gAD-System/services/calc-worker/rmq"
@@ -107,17 +108,29 @@ func StartWorkers(ctx context.Context, cfg *config.Config, input rmq.InputExprSt
 	return done, nil
 }
 
+type Result struct {
+	Result int64
+}
+
+type ResultFromCalc struct {
+	Result
+	ID string
+}
+
 func startOperationWorker(cfg WorkerConfig, count int, wg *sync.WaitGroup) {
 	for i := 0; i < count; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for in := range cfg.Input {
+			for _ = range cfg.Input {
 				if cfg.DelayGen != nil {
 					time.Sleep(cfg.DelayGen())
 				}
 				// cfg.Output <- ResultExpr{result: operations[cfg.Operation](in.lhs, in.rhs), ID: in.ID}
-				cfg.Output <- in + "+"
+				// TODO remove костыль
+				ans := ResultFromCalc{Result: Result{100}, ID: "0"}
+				data, _ := json.Marshal(ans)
+				cfg.Output <- fmt.Sprintf(string(data))
 			}
 		}()
 	}

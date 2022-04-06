@@ -47,7 +47,7 @@ func main() {
 		log.Println("RMQ connection closed.")
 	}()
 
-	rmqPub, err := rmq.NewProducer(rmqConn, cfg.RMQConfig.PubQueryName)
+	rmqPub, err := rmq.NewProducer(cfg, rmqConn)
 	if err != nil {
 		logger.Fatal("failed to create new publisher", zap.Error(err))
 	}
@@ -59,7 +59,7 @@ func main() {
 		log.Println("RMQ channel publish closed.")
 	}()
 
-	rmqSub, err := rmq.NewConsumer(rmqConn, cfg.RMQConfig.SubQueryName)
+	rmqSub, err := rmq.NewConsumer(rmqConn, cfg.RMQConfig.QNameResult)
 	if err != nil {
 		logger.Fatal("failed to create new consumer", zap.Error(err))
 	}
