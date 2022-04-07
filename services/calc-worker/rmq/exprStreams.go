@@ -1,19 +1,21 @@
 package rmq
 
+import "gAD-System/services/calc-worker/model"
+
 // TODO change type oof chans to expr ans results
 
 type InputExprStream interface {
-	Plus() (<-chan string, error)
-	Minus() (<-chan string, error)
-	Milti() (<-chan string, error)
-	Div() (<-chan string, error)
-	Mod() (<-chan string, error)
+	Plus() (<-chan model.ExprWithID, error)
+	Minus() (<-chan model.ExprWithID, error)
+	Milti() (<-chan model.ExprWithID, error)
+	Div() (<-chan model.ExprWithID, error)
+	Mod() (<-chan model.ExprWithID, error)
 
 	Close() error
 }
 
 type OutputExprStream interface {
-	Result(<-chan string) (<-chan struct{}, error)
+	Result(<-chan model.ResultWithID) (<-chan struct{}, error)
 
 	Close() error
 }

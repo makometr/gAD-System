@@ -3,6 +3,7 @@ package rmq
 import (
 	"fmt"
 	"gAD-System/services/calc-worker/config"
+	"gAD-System/services/calc-worker/model"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -21,7 +22,7 @@ func NewRMQOutputStream(cfg *config.Config, rmq *Connection) (OutputExprStream, 
 	return &RMQOutputStream{channelOut: rmqChanOut, qName: cfg.RMQConfig.QNameResult}, nil
 }
 
-func (c *RMQOutputStream) Result(input <-chan string) (<-chan struct{}, error) {
+func (c *RMQOutputStream) Result(input <-chan model.ResultWithID) (<-chan struct{}, error) {
 	q, err := c.channelOut.QueueDeclare(c.qName, true, false, false, false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error queue connection %s: %w", c.qName, err)
@@ -32,16 +33,21 @@ func (c *RMQOutputStream) Result(input <-chan string) (<-chan struct{}, error) {
 		defer func() {
 			done <- struct{}{}
 		}()
-		for result := range input {
+		for msg := range input {
+			var dataToSend []byte
+			if dataToSend, err = msg.ToProto(); err != nil {
+				fmt.Println("UNEXPECTED error while convert msg po proto!!!", msg)
+			}
+
 			// time.Sleep(time.Second * 10)
 			err := c.channelOut.Publish("", q.Name, false, false, amqp.Publishing{
 				ContentType: "text/plain",
-				MessageId:   "0",
+				MessageId:   msg.ID,
 				Timestamp:   time.Now(),
-				Body:        []byte(result),
+				Body:        dataToSend,
 			})
 			if err != nil {
-				// send error type of result
+				fmt.Println("UNEXPECTED error while send to out queue!!!", msg)
 			}
 		}
 	}()
