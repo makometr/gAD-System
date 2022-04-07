@@ -14,8 +14,12 @@ proto-calculator:
 	@protoc -I=. --go_out=. --go-grpc_out=. ./api/proto/grpc/calculator/service.proto
 
 proto-expression:
-	@echo "${OK_COLOR}==> Generating proto code for rmq${NO_COLOR}\n"
+	@echo "${OK_COLOR}==> Generating proto code for expression${NO_COLOR}\n"
 	@protoc -I=. --go_out=. ./api/proto/expression/event.proto
+
+proto-result:
+	@echo "${OK_COLOR}==> Generating proto code for result${NO_COLOR}\n"
+	@protoc -I=. --go_out=. ./api/proto/result/event.proto
 
 docker-build-gad-manager:
 	@echo "${OK_COLOR}==> Building docker image for gad-manager${NO_COLOR}\n"

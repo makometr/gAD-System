@@ -4,6 +4,19 @@ package expression;
 
 option go_package = "internal/proto/expression/event";
 
+
+enum Operation {
+  PLUS = 0;
+  MINUS = 1;
+  MULTI = 2;
+  DIV = 3;
+  MOD = 4;
+}
+
+
 message Event {
-  string expression = 1;
+  int64 lhs = 1;
+  int64 rhs = 2;
+
+  Operation operation = 3;
 }
