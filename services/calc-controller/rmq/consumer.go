@@ -3,13 +3,14 @@ package rmq
 import (
 	"context"
 	"fmt"
+	pr_result "gAD-System/internal/proto/result/event"
 	"gAD-System/services/calc-controller/model"
 
 	"github.com/streadway/amqp"
 )
 
 type Consumer interface {
-	Consume(ctx context.Context, sub chan<- model.ResultFromCalc, ID model.MsgID)
+	Consume(ctx context.Context, sub chan<- pr_result.Event, ID model.MsgID)
 	Close() error
 }
 
@@ -46,10 +47,10 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 
 	fmt.Println("Consumer listened:", queryName)
 
-	ch := make(chan Message)
+	ch := make(chan MessageFromRMQ)
 	go func() {
 		for event := range results {
-			msg := Message{
+			msg := MessageFromRMQ{
 				ContentType: event.ContentType,
 				Timestamp:   event.Timestamp,
 				MessageID:   model.MsgID(event.MessageId),
@@ -69,7 +70,7 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 	}, nil
 }
 
-func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- model.ResultFromCalc, ID model.MsgID) {
+func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- pr_result.Event, ID model.MsgID) {
 	c.router.AddRoute(ID, sub)
 }
 

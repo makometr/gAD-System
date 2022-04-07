@@ -1,31 +1,31 @@
 package rmq
 
 import (
-	"encoding/json"
 	"fmt"
+	pr_result "gAD-System/internal/proto/result/event"
 	"gAD-System/services/calc-controller/model"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Router struct {
-	input        <-chan Message
-	routingTable map[model.MsgID]chan<- model.ResultFromCalc
+	input        <-chan MessageFromRMQ
+	routingTable map[model.MsgID]chan<- pr_result.Event
 }
 
-func InitFilter(inputFromRMQ <-chan Message) Router {
-	filter := Router{input: inputFromRMQ, routingTable: make(map[model.MsgID]chan<- model.ResultFromCalc)}
+func InitFilter(inputFromRMQ <-chan MessageFromRMQ) Router {
+	filter := Router{input: inputFromRMQ, routingTable: make(map[model.MsgID]chan<- pr_result.Event)}
 
 	go func() {
 		for msg := range inputFromRMQ {
 			sendChan := filter.routingTable[msg.MessageID]
-			// expr, err := ProtoToMsg(msg.Body) // TODO
-			var result model.Result
-			err := json.Unmarshal(msg.Body, &result)
-			if err != nil {
-				fmt.Println("error while unmarhsal result", err)
-				result = model.Result{}
+
+			var result pr_result.Event
+			if err := proto.Unmarshal(msg.Body, &result); err != nil {
+				result.Result = &pr_result.Event_ErrorMsg{"error convert proto to struct"}
 			}
 
-			sendChan <- model.ResultFromCalc{Result: result, ID: msg.MessageID}
+			sendChan <- result
 			delete(filter.routingTable, msg.MessageID)
 		}
 	}()
@@ -33,7 +33,7 @@ func InitFilter(inputFromRMQ <-chan Message) Router {
 	return filter
 }
 
-func (r *Router) AddRoute(ID model.MsgID, goal chan<- model.ResultFromCalc) {
+func (r *Router) AddRoute(ID model.MsgID, goal chan<- pr_result.Event) {
 	if val, ok := r.routingTable[ID]; ok {
 		fmt.Println("key existed in router-table!: ", val)
 	}
