@@ -22,7 +22,7 @@ func InitFilter(inputFromRMQ <-chan MessageFromRMQ) Router {
 
 			var result pr_result.Event
 			if err := proto.Unmarshal(msg.Body, &result); err != nil {
-				result.Result = &pr_result.Event_ErrorMsg{"error convert proto to struct"}
+				result.Result = &pr_result.Event_ErrorMsg{ErrorMsg: "error convert proto to struct"}
 			}
 
 			sendChan <- result
@@ -33,9 +33,9 @@ func InitFilter(inputFromRMQ <-chan MessageFromRMQ) Router {
 	return filter
 }
 
-func (r *Router) AddRoute(ID model.MsgID, goal chan<- pr_result.Event) {
-	if val, ok := r.routingTable[ID]; ok {
+func (r *Router) AddRoute(id model.MsgID, goal chan<- pr_result.Event) {
+	if val, ok := r.routingTable[id]; ok {
 		fmt.Println("key existed in router-table!: ", val)
 	}
-	r.routingTable[ID] = goal
+	r.routingTable[id] = goal
 }

@@ -45,9 +45,7 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 		return nil, err
 	}
 
-	fmt.Println("Consumer listened:", queryName)
-
-	ch := make(chan MessageFromRMQ)
+	toRouter := make(chan MessageFromRMQ)
 	go func() {
 		for event := range results {
 			msg := MessageFromRMQ{
@@ -56,17 +54,16 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 				MessageID:   model.MsgID(event.MessageId),
 				Body:        event.Body,
 			}
-			fmt.Println("readed ig loop in consumer:", msg.MessageID, string(msg.Body))
-			ch <- msg
+			toRouter <- msg
 		}
-		close(ch)
+		close(toRouter)
 	}()
 
 	return &rmqConsumer{
 		conn:    connection,
 		channel: channel,
 		query:   queryName,
-		router:  InitFilter(ch),
+		router:  InitFilter(toRouter),
 	}, nil
 }
 

@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
-	expr "gAD-System/internal/proto/expression/event"
 	pb "gAD-System/internal/proto/grpc/calculator/service"
-	result "gAD-System/internal/proto/result/event"
+	pr_result "gAD-System/internal/proto/result/event"
+	"gAD-System/services/calc-controller/parser"
 	"gAD-System/services/calc-controller/rmq"
+	"strconv"
+	"sync"
 )
 
 type calculatorServer struct {
@@ -21,35 +23,42 @@ func NewCalculatorServer(exprCalc rmq.ExprCalculator) *calculatorServer {
 }
 
 func (s *calculatorServer) DoCalculate(ctx context.Context, request *pb.CalculatorRequest) (*pb.CalculatorReply, error) {
-	// payload := request.GetExpression()
-
-	test_expr := expr.Event{Lhs: 100, Rhs: 200, Operation: expr.Operation_PLUS}
+	exprsToCalculate := request.GetExpression()
+	results := make([]string, len(exprsToCalculate))
 
 	// отравляем их "асинхронно" на вычисления
-	var results []string
+	var wg sync.WaitGroup
+	wg.Add(len(exprsToCalculate))
+	for i, expr := range exprsToCalculate {
+		go func(gIndex int, expr string) {
+			parsedExpr, err := parser.ParseBinaryExpression(expr)
+			if err != nil {
+				fmt.Println("Error in ParseBinaryExpression():", err)
+			}
 
-	var test_result result.Event
-	test_result, err := s.exprCalculator.CalculateExpression(test_expr)
-	if err != nil {
-		fmt.Println("Error in DoCalculate():", err)
+			result, err := s.exprCalculator.CalculateExpression(*parsedExpr)
+			if err != nil {
+				fmt.Println("Error in DoCalculate():", err)
+			}
+
+			var finalResult string
+			switch res := result.Result.(type) {
+			case *pr_result.Event_Product:
+				finalResult = strconv.FormatInt(res.Product, 10)
+			case *pr_result.Event_ErrorMsg:
+				finalResult = "error: " + res.ErrorMsg
+			default:
+				finalResult = "internal error"
+				fmt.Println("enexpected value from protobuf conversation")
+			}
+
+			results[gIndex] = finalResult
+			wg.Done()
+		}(i, expr)
 	}
-	results = append(results, test_result.String())
 
-	// var wg sync.WaitGroup
-	// wg.Add(len(payload))
-	// for _, expr := range payload {
-	// 	go func(expr string) {
-	// 		result, err := s.exprCalculator.CalculateExpression(model.Expression{Lhs: 100, Rhs: 200, Oper: model.Plus})
-	// 		if err != nil {
-	// 			fmt.Println("Error in DoCalculate():", err)
-	// 		}
-	// 		results = append(results, strconv.Itoa(int(result.Result)))
-	// 		wg.Done()
-	// 	}(expr)
-	// }
+	wg.Wait()
 
-	// wg.Wait()
-
-	reply := pb.CalculatorReply{Result: append(results, "EVERYTHING WROCKS!")}
+	reply := pb.CalculatorReply{Result: results}
 	return &reply, nil
 }
