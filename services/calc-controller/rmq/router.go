@@ -2,25 +2,30 @@ package rmq
 
 import (
 	"fmt"
+	pr_result "gAD-System/internal/proto/result/event"
+	"gAD-System/services/calc-controller/model"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Router struct {
-	input        <-chan Message
-	routingTable map[MsgID]chan<- ExpressionWithID
+	input        <-chan MessageFromRMQ
+	routingTable map[model.MsgID]chan<- pr_result.Event
 }
 
-func InitFilter(inputFromRMQ <-chan Message) Router {
-	filter := Router{input: inputFromRMQ, routingTable: make(map[MsgID]chan<- ExpressionWithID)}
+func InitFilter(inputFromRMQ <-chan MessageFromRMQ) Router {
+	filter := Router{input: inputFromRMQ, routingTable: make(map[model.MsgID]chan<- pr_result.Event)}
 
 	go func() {
 		for msg := range inputFromRMQ {
 			sendChan := filter.routingTable[msg.MessageID]
-			expr, err := ProtoToMsg(msg.Body) // TODO
-			if err != nil {
-				expr = "convertation unsuccessful"
+
+			var result pr_result.Event
+			if err := proto.Unmarshal(msg.Body, &result); err != nil {
+				result.Result = &pr_result.Event_ErrorMsg{ErrorMsg: "error convert proto to struct"}
 			}
 
-			sendChan <- ExpressionWithID{Expr: expr, Id: msg.MessageID}
+			sendChan <- result
 			delete(filter.routingTable, msg.MessageID)
 		}
 	}()
@@ -28,9 +33,9 @@ func InitFilter(inputFromRMQ <-chan Message) Router {
 	return filter
 }
 
-func (r *Router) AddRoute(ID MsgID, goal chan<- ExpressionWithID) {
-	if val, ok := r.routingTable[ID]; ok {
+func (r *Router) AddRoute(id model.MsgID, goal chan<- pr_result.Event) {
+	if val, ok := r.routingTable[id]; ok {
 		fmt.Println("key existed in router-table!: ", val)
 	}
-	r.routingTable[ID] = goal
+	r.routingTable[id] = goal
 }

@@ -10,10 +10,15 @@ type Config struct {
 
 // RabbitMQConfig stores configs for RabbitMQ connection
 type RabbitMQConfig struct {
-	Server       string `envconfig:"RABBITMQ_SERVER" default:"localhost"`
-	Port         string `envconfig:"RABBITMQ_PORT" default:"5672"`
-	PubQueryName string `envconfig:"PUBLISH_QUERY_NAME" default:"cc-in"`
-	SubQueryName string `envconfig:"SUBSCRIBE_QUERY_NAME" default:"cc-out"`
+	Server string `envconfig:"RABBITMQ_SERVER" default:"localhost"`
+	Port   string `envconfig:"RABBITMQ_PORT" default:"5672"`
+
+	QNameResult string `envconfig:"QUERY_NAME_RESULT" default:"expr.result"`
+	QNamePLus   string `envconfig:"QUERY_NAME_PLUS" default:"expr.plus"`
+	QNameMinus  string `envconfig:"QUERY_NAME_MINUS" default:"expr.minus"`
+	QNameMulti  string `envconfig:"QUERY_NAME_MULTI" default:"expr.multi"`
+	QNameDiv    string `envconfig:"QUERY_NAME_DIV" default:"expr.div"`
+	QNameMod    string `envconfig:"QUERY_NAME_MOD" default:"expr.mod"`
 }
 
 // CalcControllerConfig stores configs for GRPC connection

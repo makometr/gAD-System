@@ -3,12 +3,14 @@ package rmq
 import (
 	"context"
 	"fmt"
+	pr_result "gAD-System/internal/proto/result/event"
+	"gAD-System/services/calc-controller/model"
 
 	"github.com/streadway/amqp"
 )
 
 type Consumer interface {
-	Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID)
+	Consume(ctx context.Context, sub chan<- pr_result.Event, ID model.MsgID)
 	Close() error
 }
 
@@ -25,8 +27,13 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 		return nil, err
 	}
 
+	q, err := channel.QueueDeclare(queryName, true, false, false, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error queue connection %s: %w", queryName, err)
+	}
+
 	results, err := channel.Consume(
-		queryName,
+		q.Name,
 		"calc-controller",
 		true,
 		false,
@@ -38,32 +45,29 @@ func NewConsumer(connection *amqp.Connection, queryName string) (Consumer, error
 		return nil, err
 	}
 
-	fmt.Println("Consumer listened:", queryName)
-
-	ch := make(chan Message)
+	toRouter := make(chan MessageFromRMQ)
 	go func() {
 		for event := range results {
-			msg := Message{
+			msg := MessageFromRMQ{
 				ContentType: event.ContentType,
 				Timestamp:   event.Timestamp,
-				MessageID:   MsgID(event.MessageId),
+				MessageID:   model.MsgID(event.MessageId),
 				Body:        event.Body,
 			}
-			fmt.Println("readed ig loop in consumer:", msg.MessageID, string(msg.Body))
-			ch <- msg
+			toRouter <- msg
 		}
-		close(ch)
+		close(toRouter)
 	}()
 
 	return &rmqConsumer{
 		conn:    connection,
 		channel: channel,
 		query:   queryName,
-		router:  InitFilter(ch),
+		router:  InitFilter(toRouter),
 	}, nil
 }
 
-func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- ExpressionWithID, ID MsgID) {
+func (c *rmqConsumer) Consume(ctx context.Context, sub chan<- pr_result.Event, ID model.MsgID) {
 	c.router.AddRoute(ID, sub)
 }
 

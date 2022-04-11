@@ -17,7 +17,7 @@ type GadManagerConfig struct {
 // CalcControllerConfig stores configs for GRPC connection
 type CalcControllerConfig struct {
 	Server string `envconfig:"CALCULATION_CONTROLLER_SERVER" default:"localhost"`
-	Port   string `envconfig:"CALCULATION_CONTROLLER_PORT" default:":50051"`
+	Port   string `envconfig:"CALCULATION_CONTROLLER_PORT" default:"50051"`
 }
 
 // InitConfig reads config variables from env and init *Config value

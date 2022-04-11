@@ -3,39 +3,14 @@ package rmq
 import (
 	"time"
 
-	schema "gAD-System/internal/proto/expression/event"
-
-	"google.golang.org/protobuf/proto"
+	"gAD-System/services/calc-controller/model"
 )
 
-type MsgID string
+// type MsgID string
 
-type Message struct {
+type MessageFromRMQ struct {
 	ContentType string
 	Timestamp   time.Time
-	MessageID   MsgID
+	MessageID   model.MsgID
 	Body        []byte
-}
-
-// ExpressionWithID linked raw expression with id
-type ExpressionWithID struct {
-	Expr string
-	Id   MsgID
-}
-
-func MsgToProtoBytes(message string) ([]byte, error) {
-	event := schema.Event{Expression: message}
-	out, err := proto.Marshal(&event)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func ProtoToMsg(data []byte) (string, error) {
-	event := schema.Event{}
-	if err := proto.Unmarshal(data, &event); err != nil {
-		return "", err
-	}
-	return event.Expression, nil
 }

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package result;
+
+option go_package = "internal/proto/result/event";
+
+message Event {
+    oneof result {
+      int64 product = 1;
+      string errorMsg = 2;
+    }
+  }
+  
