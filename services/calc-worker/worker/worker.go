@@ -128,9 +128,13 @@ func startOperationWorker(cfg WorkerConfig, count int, wg *sync.WaitGroup) {
 				if cfg.DelayGen != nil {
 					time.Sleep(cfg.DelayGen())
 				}
-				ans := operations[cfg.Operation](in.Expr.Lhs, in.Expr.Rhs)
+				ans := calculate(in.Expr.Lhs, in.Expr.Rhs, cfg.Operation)
 				cfg.Output <- model.ResultWithID{Result: pr_result.Event{Result: &pr_result.Event_Product{Product: ans}}, ID: in.ID}
 			}
 		}()
 	}
+}
+
+func calculate(lhs, rhs int64, operation pr_expr.Operation) int64 {
+	return operations[operation](lhs, rhs)
 }
