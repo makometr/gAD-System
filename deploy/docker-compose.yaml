@@ -12,6 +12,7 @@ services:
       CALCULATION_CONTROLLER_PORT: 50051
     depends_on:
       - calc-controller
+    restart: always
     ports:
       - "8080:8080"
     networks:
@@ -30,7 +31,7 @@ services:
       CALCULATION_CONTROLLER_PORT: 50051
     depends_on:
       - gad-rabbitmq
-    restart: on-failure
+    restart: always
     ports:
       - "50051:50051"
     networks:
@@ -48,7 +49,7 @@ services:
     depends_on:
       - gad-rabbitmq
       - calc-controller
-    restart: on-failure
+    restart: always
     networks:
       - gad-system
 
