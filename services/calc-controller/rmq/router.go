@@ -4,6 +4,7 @@ import (
 	"fmt"
 	pr_result "gAD-System/internal/proto/result/event"
 	"gAD-System/services/calc-controller/model"
+	"sync"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -11,10 +12,15 @@ import (
 type Router struct {
 	input        <-chan MessageFromRMQ
 	routingTable map[model.MsgID]chan<- pr_result.Event
+	mutex        *sync.Mutex
 }
 
 func InitFilter(inputFromRMQ <-chan MessageFromRMQ) Router {
-	filter := Router{input: inputFromRMQ, routingTable: make(map[model.MsgID]chan<- pr_result.Event)}
+	filter := Router{
+		input:        inputFromRMQ,
+		routingTable: make(map[model.MsgID]chan<- pr_result.Event),
+		mutex:        &sync.Mutex{},
+	}
 
 	go func() {
 		for msg := range inputFromRMQ {
@@ -26,7 +32,9 @@ func InitFilter(inputFromRMQ <-chan MessageFromRMQ) Router {
 			}
 
 			sendChan <- result
+			filter.mutex.Lock()
 			delete(filter.routingTable, msg.MessageID)
+			filter.mutex.Unlock()
 		}
 	}()
 
@@ -37,5 +45,7 @@ func (r *Router) AddRoute(id model.MsgID, goal chan<- pr_result.Event) {
 	if val, ok := r.routingTable[id]; ok {
 		fmt.Println("key existed in router-table!: ", val)
 	}
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	r.routingTable[id] = goal
 }
