@@ -74,3 +74,6 @@ build-calc-worker:
 
 
 build: build-gad-manager build-calc-controller build-calc-worker
+
+test-it:
+	go test -tags=integration ./it -v -count=1

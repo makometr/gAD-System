@@ -1,8 +1,11 @@
-compose:
+up:
 	@echo Deleting images...
 	docker-compose rm -f
 	@echo Building...
 	docker-compose build -q
 	@echo Upping...
-	docker-compose up
-	cd ../
+	docker-compose up -d
+
+down:
+	@echo Stopping...
+	docker-compose down -v
